@@ -13,10 +13,15 @@ import {
   UsersRound,
 } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
+import { TermTooltip } from "@/components/shared/term-tooltip";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { levelLabel, statusLabel, statusTone } from "@/features/clients/client-labels";
+import {
+  levelLabel,
+  statusLabel,
+  statusTone,
+} from "@/features/clients/client-labels";
 import { clientApi } from "@/features/clients/services/client-api";
 import type { Client, ClientStatus } from "@/features/clients/types/client";
 
@@ -85,19 +90,24 @@ function ClientCard({ client }: { client: Client }) {
         <dt className="text-slate-500">Última evaluación</dt>
         <dd className="font-medium">
           {client.latestAssessment
-            ? new Intl.DateTimeFormat("es", { day: "numeric", month: "short" }).format(
-                new Date(client.latestAssessment.assessedAt),
-              )
+            ? new Intl.DateTimeFormat("es", {
+                day: "numeric",
+                month: "short",
+              }).format(new Date(client.latestAssessment.assessedAt))
             : "Pendiente"}
         </dd>
       </dl>
       <div className="to-blue/30 mt-4 grid grid-cols-3 divide-x divide-white rounded-xl bg-gradient-to-r from-violet-50 via-fuchsia-50/70 px-2 py-2.5 text-center">
         <div>
           <p className="text-[10px] text-slate-500">Peso</p>
-          <p className="mt-0.5 text-xs font-bold">{weight ? `${weight} kg` : "—"}</p>
+          <p className="mt-0.5 text-xs font-bold">
+            {weight ? `${weight} kg` : "—"}
+          </p>
         </div>
         <div>
-          <p className="text-[10px] text-slate-500">IMC</p>
+          <p className="text-[10px] text-slate-500">
+            <TermTooltip term="IMC" />
+          </p>
           <p className="mt-0.5 text-xs font-bold">{client.bmi ?? "—"}</p>
         </div>
         <div>
@@ -143,8 +153,11 @@ export function ClientsSelector() {
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <label className="relative min-w-56">
-            <Search className="absolute top-3 left-3 text-slate-400" size={17} />
+          <label className="relative w-full sm:w-auto sm:min-w-56">
+            <Search
+              className="absolute top-3 left-3 text-slate-400"
+              size={17}
+            />
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
@@ -156,7 +169,9 @@ export function ClientsSelector() {
           <label className="relative">
             <select
               value={status}
-              onChange={(event) => setStatus(event.target.value as "ALL" | ClientStatus)}
+              onChange={(event) =>
+                setStatus(event.target.value as "ALL" | ClientStatus)
+              }
               className="focus:ring-primary/20 h-10 w-full appearance-none rounded-lg border border-slate-200 bg-white py-0 pr-10 pl-3 text-sm font-medium shadow-sm outline-none focus:ring-2"
               aria-label="Filtrar por estado"
             >
@@ -190,12 +205,19 @@ export function ClientsSelector() {
               key={key}
               className="flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white px-4 py-4 shadow-[0_8px_24px_rgba(32,23,67,0.035)]"
             >
-              <div className={cn("grid size-11 place-items-center rounded-xl", tone)}>
+              <div
+                className={cn(
+                  "grid size-11 place-items-center rounded-xl",
+                  tone,
+                )}
+              >
                 <Icon size={21} />
               </div>
               <div>
                 <p className="text-xs font-medium text-slate-500">{label}</p>
-                <p className="text-2xl font-bold tracking-tight">{data.summary[key]}</p>
+                <p className="text-2xl font-bold tracking-tight">
+                  {data.summary[key]}
+                </p>
               </div>
             </div>
           ))}

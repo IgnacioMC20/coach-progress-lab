@@ -55,5 +55,5 @@ export const progressionPolicyLabel: Record<ProgressionPolicy, string> = {
   DOUBLE_PROGRESSION: "Doble progresión",
   LOAD_FIRST: "Priorizar carga",
   REPETITIONS_FIRST: "Priorizar repeticiones",
-  RIR_BASED: "Basada en RIR",
+  RIR_BASED: "Basada en repeticiones en reserva",
 };

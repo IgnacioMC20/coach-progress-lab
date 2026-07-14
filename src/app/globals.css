@@ -16,7 +16,11 @@
 }
 body {
   min-height: 100vh;
+  overflow-x: clip;
   background: #fafafc;
   color: #111827;
   font-family: "Avenir Next", "Segoe UI", sans-serif;
+}
+html {
+  overflow-x: clip;
 }

@@ -68,7 +68,9 @@ function RoutineCard({ routine }: { routine: Routine }) {
         </span>
       </div>
       <div className="mt-4">
-        <h2 className="font-bold tracking-tight text-slate-900">{routine.name}</h2>
+        <h2 className="font-bold tracking-tight text-slate-900">
+          {routine.name}
+        </h2>
         <p className="mt-1 line-clamp-2 min-h-10 text-xs leading-5 text-slate-500">
           {routine.description ?? "Sin descripción todavía."}
         </p>
@@ -76,7 +78,9 @@ function RoutineCard({ routine }: { routine: Routine }) {
       <div className="mt-4 grid grid-cols-3 divide-x divide-slate-100 rounded-xl bg-slate-50 px-2 py-3 text-center">
         <div>
           <p className="text-[10px] text-slate-500">Versión</p>
-          <p className="mt-0.5 text-sm font-bold">v{routine.latestVersion ?? "—"}</p>
+          <p className="mt-0.5 text-sm font-bold">
+            v{routine.latestVersion ?? "—"}
+          </p>
         </div>
         <div>
           <p className="text-[10px] text-slate-500">Días</p>
@@ -121,12 +125,16 @@ export function RoutinesLibrary() {
             Rutinas
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Crea plantillas versionadas y asigna una versión concreta a cada cliente.
+            Crea plantillas versionadas y asigna una versión concreta a cada
+            cliente.
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <label className="relative min-w-56">
-            <Search className="absolute top-3 left-3 text-slate-400" size={17} />
+          <label className="relative w-full sm:w-auto sm:min-w-56">
+            <Search
+              className="absolute top-3 left-3 text-slate-400"
+              size={17}
+            />
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
@@ -138,7 +146,9 @@ export function RoutinesLibrary() {
           <label className="relative">
             <select
               value={status}
-              onChange={(event) => setStatus(event.target.value as "ALL" | RoutineStatus)}
+              onChange={(event) =>
+                setStatus(event.target.value as "ALL" | RoutineStatus)
+              }
               className="focus:ring-primary/20 h-10 w-full appearance-none rounded-lg border border-slate-200 bg-white py-0 pr-10 pl-3 text-sm font-medium shadow-sm outline-none focus:ring-2"
               aria-label="Filtrar por estado"
             >
@@ -171,12 +181,19 @@ export function RoutinesLibrary() {
               key={key}
               className="flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white px-4 py-4 shadow-[0_8px_24px_rgba(32,23,67,0.035)]"
             >
-              <div className={cn("grid size-11 place-items-center rounded-xl", tone)}>
+              <div
+                className={cn(
+                  "grid size-11 place-items-center rounded-xl",
+                  tone,
+                )}
+              >
                 <Icon size={21} />
               </div>
               <div>
                 <p className="text-xs font-medium text-slate-500">{label}</p>
-                <p className="text-2xl font-bold tracking-tight">{data.summary[key]}</p>
+                <p className="text-2xl font-bold tracking-tight">
+                  {data.summary[key]}
+                </p>
               </div>
             </div>
           ))}

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
+import type { ReactNode } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { type Resolver, useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -18,8 +19,13 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/empty-state";
+import { TermTooltip } from "@/components/shared/term-tooltip";
 import { assessmentInputSchema } from "@/features/clients/schemas/client.schema";
-import { levelLabel, statusLabel, statusTone } from "@/features/clients/client-labels";
+import {
+  levelLabel,
+  statusLabel,
+  statusTone,
+} from "@/features/clients/client-labels";
 import { clientApi } from "@/features/clients/services/client-api";
 import type { ClientAssessment } from "@/features/clients/types/client";
 import { cn } from "@/lib/utils";
@@ -41,7 +47,7 @@ function Metric({
   detail,
 }: {
   icon: typeof Scale;
-  label: string;
+  label: ReactNode;
   value: string | number;
   detail?: string;
 }) {
@@ -65,7 +71,9 @@ function AssessmentForm({
 }) {
   const queryClient = useQueryClient();
   const form = useForm<AssessmentFormValues>({
-    resolver: zodResolver(assessmentInputSchema) as Resolver<AssessmentFormValues>,
+    resolver: zodResolver(
+      assessmentInputSchema,
+    ) as Resolver<AssessmentFormValues>,
     defaultValues: assessment
       ? {
           assessedAt: assessment.assessedAt.slice(0, 10),
@@ -160,9 +168,8 @@ export function ClientProfile() {
   const clientId = params.clientId;
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [selectedAssessment, setSelectedAssessment] = useState<ClientAssessment | null>(
-    null,
-  );
+  const [selectedAssessment, setSelectedAssessment] =
+    useState<ClientAssessment | null>(null);
   const deletion = useMutation({
     mutationFn: () => clientApi.remove(clientId),
     onSuccess: () => {
@@ -260,18 +267,26 @@ export function ClientProfile() {
           <Metric
             icon={Scale}
             label="Peso actual"
-            value={assessment?.weightKg ? `${assessment.weightKg} kg` : "Sin registro"}
+            value={
+              assessment?.weightKg
+                ? `${assessment.weightKg} kg`
+                : "Sin registro"
+            }
             detail={assessment ? "Última evaluación" : undefined}
           />
           <Metric
             icon={Ruler}
-            label="Estatura / IMC"
+            label={
+              <span className="inline-flex items-center gap-1">
+                Estatura / <TermTooltip term="IMC" />
+              </span>
+            }
             value={
               client.heightCm
                 ? `${client.heightCm} cm · ${client.bmi ?? "—"}`
                 : "Sin registro"
             }
-            detail="IMC calculado"
+            detail="Índice calculado"
           />
           <Metric
             icon={UserRound}
@@ -290,7 +305,11 @@ export function ClientProfile() {
           <Metric
             icon={CalendarDays}
             label="Programa"
-            value={client.currentWeek ? `Semana ${client.currentWeek}` : "Sin asignar"}
+            value={
+              client.currentWeek
+                ? `Semana ${client.currentWeek}`
+                : "Sin asignar"
+            }
             detail={client.currentProgram ?? undefined}
           />
         </div>
@@ -340,7 +359,9 @@ export function ClientProfile() {
                   <div>
                     <p className="text-xs text-slate-500">Grasa corporal</p>
                     <p className="font-semibold">
-                      {item.bodyFatPercentage ? `${item.bodyFatPercentage}%` : "—"}
+                      {item.bodyFatPercentage
+                        ? `${item.bodyFatPercentage}%`
+                        : "—"}
                     </p>
                   </div>
                   <div>
@@ -350,7 +371,9 @@ export function ClientProfile() {
                     </p>
                   </div>
                   {item.notes && (
-                    <p className="col-span-full text-xs text-slate-500">{item.notes}</p>
+                    <p className="col-span-full text-xs text-slate-500">
+                      {item.notes}
+                    </p>
                   )}
                   <button
                     type="button"
@@ -381,7 +404,9 @@ export function ClientProfile() {
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-slate-500">Programa</dt>
-              <dd className="text-right font-medium">{client.currentProgram ?? "—"}</dd>
+              <dd className="text-right font-medium">
+                {client.currentProgram ?? "—"}
+              </dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-slate-500">Nivel</dt>
@@ -392,7 +417,9 @@ export function ClientProfile() {
           </dl>
           {client.notes && (
             <div className="mt-5 rounded-xl bg-slate-50 p-4">
-              <p className="text-xs font-bold text-slate-500 uppercase">Notas</p>
+              <p className="text-xs font-bold text-slate-500 uppercase">
+                Notas
+              </p>
               <p className="mt-1 text-sm leading-6">{client.notes}</p>
             </div>
           )}

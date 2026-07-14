@@ -9,8 +9,12 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ChevronDown, Plus, Save, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TermTooltip } from "@/components/shared/term-tooltip";
 import { exerciseApi } from "@/features/exercises/services/exercise-api";
-import { blockTypeLabel, routineStatusLabel } from "@/features/routines/routine-labels";
+import {
+  blockTypeLabel,
+  routineStatusLabel,
+} from "@/features/routines/routine-labels";
 import { routineApi } from "@/features/routines/services/routine-api";
 import {
   routineInputSchema,
@@ -55,7 +59,10 @@ const newEntry = (): Entry => ({
   rir: 2,
   restSeconds: 90,
 });
-const newBlock = (): Block => ({ type: "STRAIGHT_SET", exercises: [newEntry()] });
+const newBlock = (): Block => ({
+  type: "STRAIGHT_SET",
+  exercises: [newEntry()],
+});
 const newDay = (position: number): Day => ({
   name: `Día ${position}`,
   blocks: [newBlock()],
@@ -86,7 +93,13 @@ function fromRoutine(routine?: RoutineDetail): Day[] {
   }));
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="grid gap-1.5 text-sm font-semibold text-slate-700">
       <span>{label}</span>
@@ -120,7 +133,8 @@ export function RoutineBuilder({ routine }: { routine?: RoutineDetail }) {
         : routineInputSchema.safeParse(payload);
       if (!parsed.success)
         throw new Error(
-          parsed.error.issues[0]?.message ?? "Revisa la estructura de la rutina",
+          parsed.error.issues[0]?.message ??
+            "Revisa la estructura de la rutina",
         );
       return routine
         ? routineApi.addVersion(routine.id, parsed.data)
@@ -135,9 +149,15 @@ export function RoutineBuilder({ routine }: { routine?: RoutineDetail }) {
   });
   const updateDay = (dayIndex: number, patch: Partial<Day>) =>
     setDays((current) =>
-      current.map((day, index) => (index === dayIndex ? { ...day, ...patch } : day)),
+      current.map((day, index) =>
+        index === dayIndex ? { ...day, ...patch } : day,
+      ),
     );
-  const updateBlock = (dayIndex: number, blockIndex: number, patch: Partial<Block>) =>
+  const updateBlock = (
+    dayIndex: number,
+    blockIndex: number,
+    patch: Partial<Block>,
+  ) =>
     setDays((current) =>
       current.map((day, currentDay) =>
         currentDay !== dayIndex
@@ -197,7 +217,9 @@ export function RoutineBuilder({ routine }: { routine?: RoutineDetail }) {
                 Constructor versionado
               </p>
               <h1 className="mt-1 text-2xl font-bold tracking-tight">
-                {isVersion ? `Nueva versión · ${routine?.name}` : "Nueva rutina"}
+                {isVersion
+                  ? `Nueva versión · ${routine?.name}`
+                  : "Nueva rutina"}
               </h1>
               <p className="mt-1 text-sm text-slate-500">
                 {isVersion
@@ -260,7 +282,9 @@ export function RoutineBuilder({ routine }: { routine?: RoutineDetail }) {
                 </span>
                 <Input
                   value={day.name}
-                  onChange={(event) => updateDay(dayIndex, { name: event.target.value })}
+                  onChange={(event) =>
+                    updateDay(dayIndex, { name: event.target.value })
+                  }
                   className="h-9 max-w-xs border-slate-200 font-bold"
                   placeholder="Nombre del día"
                 />
@@ -270,7 +294,9 @@ export function RoutineBuilder({ routine }: { routine?: RoutineDetail }) {
                 <button
                   type="button"
                   onClick={() =>
-                    setDays((current) => current.filter((_, index) => index !== dayIndex))
+                    setDays((current) =>
+                      current.filter((_, index) => index !== dayIndex),
+                    )
                   }
                   disabled={days.length === 1}
                   className="ml-auto rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-30"
@@ -299,8 +325,12 @@ export function RoutineBuilder({ routine }: { routine?: RoutineDetail }) {
                           <option value="STRAIGHT_SET">
                             {blockTypeLabel.STRAIGHT_SET}
                           </option>
-                          <option value="SUPERSET">{blockTypeLabel.SUPERSET}</option>
-                          <option value="CIRCUIT">{blockTypeLabel.CIRCUIT}</option>
+                          <option value="SUPERSET">
+                            {blockTypeLabel.SUPERSET}
+                          </option>
+                          <option value="CIRCUIT">
+                            {blockTypeLabel.CIRCUIT}
+                          </option>
                         </select>
                         <ChevronDown
                           className="pointer-events-none absolute top-2 right-2 text-slate-400"
@@ -310,7 +340,9 @@ export function RoutineBuilder({ routine }: { routine?: RoutineDetail }) {
                       <Input
                         value={block.name ?? ""}
                         onChange={(event) =>
-                          updateBlock(dayIndex, blockIndex, { name: event.target.value })
+                          updateBlock(dayIndex, blockIndex, {
+                            name: event.target.value,
+                          })
                         }
                         className="border-purple/40 h-9 max-w-60"
                         placeholder="Nombre opcional del bloque"
@@ -334,7 +366,9 @@ export function RoutineBuilder({ routine }: { routine?: RoutineDetail }) {
                         type="button"
                         onClick={() =>
                           updateDay(dayIndex, {
-                            blocks: day.blocks.filter((_, index) => index !== blockIndex),
+                            blocks: day.blocks.filter(
+                              (_, index) => index !== blockIndex,
+                            ),
                           })
                         }
                         disabled={day.blocks.length === 1}
@@ -415,24 +449,27 @@ export function RoutineBuilder({ routine }: { routine?: RoutineDetail }) {
                             aria-label="Repeticiones máximas"
                             placeholder="Reps max"
                           />
-                          <Input
-                            value={entry.rir ?? ""}
-                            onChange={(event) =>
-                              updateEntry(dayIndex, blockIndex, entryIndex, {
-                                rir:
-                                  event.target.value === ""
-                                    ? undefined
-                                    : Number(event.target.value),
-                              })
-                            }
-                            className="h-9 border-slate-200"
-                            type="number"
-                            min="0"
-                            max="5"
-                            step="0.5"
-                            aria-label="RIR"
-                            placeholder="RIR"
-                          />
+                          <div className="flex min-w-0 items-center gap-1">
+                            <Input
+                              value={entry.rir ?? ""}
+                              onChange={(event) =>
+                                updateEntry(dayIndex, blockIndex, entryIndex, {
+                                  rir:
+                                    event.target.value === ""
+                                      ? undefined
+                                      : Number(event.target.value),
+                                })
+                              }
+                              className="h-9 min-w-0 w-auto flex-1 border-slate-200"
+                              type="number"
+                              min="0"
+                              max="5"
+                              step="0.5"
+                              aria-label="RIR, repeticiones en reserva"
+                              placeholder="RIR"
+                            />
+                            <TermTooltip term="RIR" />
+                          </div>
                           <Input
                             value={entry.restSeconds ?? ""}
                             onChange={(event) =>
@@ -497,7 +534,9 @@ export function RoutineBuilder({ routine }: { routine?: RoutineDetail }) {
         </div>
         <button
           type="button"
-          onClick={() => setDays((current) => [...current, newDay(current.length + 1)])}
+          onClick={() =>
+            setDays((current) => [...current, newDay(current.length + 1)])
+          }
           className="border-primary/45 text-primary hover:bg-lavender/25 inline-flex h-11 items-center gap-2 rounded-xl border border-dashed bg-white px-4 text-sm font-bold"
         >
           <Plus size={17} />

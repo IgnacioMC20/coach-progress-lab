@@ -17,6 +17,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
+import { TermTooltip } from "@/components/shared/term-tooltip";
 import { Button } from "@/components/ui/button";
 import { clientApi } from "@/features/clients/services/client-api";
 import {
@@ -39,7 +40,18 @@ function prescription(exercise: {
   const reps = exercise.repsMin
     ? `${exercise.repsMin}${exercise.repsMax && exercise.repsMax !== exercise.repsMin ? `–${exercise.repsMax}` : ""} reps`
     : "Sin reps";
-  return `${exercise.sets} × ${reps}${exercise.rir !== null ? ` · RIR ${exercise.rir}` : ""}${exercise.restSeconds ? ` · ${exercise.restSeconds}s` : ""}`;
+  return (
+    <>
+      {exercise.sets} × {reps}
+      {exercise.rir !== null && (
+        <>
+          {" · "}
+          <TermTooltip term="RIR" /> {exercise.rir}
+        </>
+      )}
+      {exercise.restSeconds ? ` · ${exercise.restSeconds}s` : ""}
+    </>
+  );
 }
 
 export function RoutineProfile() {
@@ -55,7 +67,8 @@ export function RoutineProfile() {
   });
   const clients = useQuery({
     queryKey: ["assignment-clients"],
-    queryFn: () => clientApi.list(new URLSearchParams({ limit: "50", status: "ACTIVE" })),
+    queryFn: () =>
+      clientApi.list(new URLSearchParams({ limit: "50", status: "ACTIVE" })),
   });
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ["routine", routineId] });
@@ -74,8 +87,13 @@ export function RoutineProfile() {
     onError: (error) => window.alert(error.message),
   });
   const updateAssignment = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: RoutineAssignmentStatus }) =>
-      routineApi.updateAssignment(id, { status }),
+    mutationFn: ({
+      id,
+      status,
+    }: {
+      id: string;
+      status: RoutineAssignmentStatus;
+    }) => routineApi.updateAssignment(id, { status }),
     onSuccess: refresh,
   });
   const remove = useMutation({
@@ -220,7 +238,8 @@ export function RoutineProfile() {
                                     {exercise.exerciseName}
                                   </p>
                                   <p className="mt-0.5 text-xs text-slate-500">
-                                    {exercise.equipment ?? "Ejercicio eliminado"}
+                                    {exercise.equipment ??
+                                      "Ejercicio eliminado"}
                                   </p>
                                 </div>
                                 <p className="text-right text-xs font-semibold text-slate-600">
@@ -306,7 +325,9 @@ export function RoutineProfile() {
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <p className="text-sm font-bold">{assignment.clientName}</p>
+                          <p className="text-sm font-bold">
+                            {assignment.clientName}
+                          </p>
                           <p className="text-xs text-slate-500">
                             v{assignment.version} ·{" "}
                             {assignmentStatusLabel[assignment.status]}
@@ -363,7 +384,9 @@ export function RoutineProfile() {
                     key={version.id}
                     className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm"
                   >
-                    <span className="font-semibold">Versión {version.version}</span>
+                    <span className="font-semibold">
+                      Versión {version.version}
+                    </span>
                     <span className="text-xs text-slate-500">
                       {new Intl.DateTimeFormat("es", {
                         day: "numeric",

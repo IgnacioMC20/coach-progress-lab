@@ -8,6 +8,7 @@ import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TermTooltip } from "@/components/shared/term-tooltip";
 import { clientInputSchema } from "@/features/clients/schemas/client.schema";
 import { clientApi } from "@/features/clients/services/client-api";
 import type {
@@ -45,7 +46,9 @@ function Field({
     <label className="grid gap-1.5 text-sm font-semibold text-slate-700">
       <span>{label}</span>
       {children}
-      {error && <span className="text-xs font-medium text-rose-600">{error}</span>}
+      {error && (
+        <span className="text-xs font-medium text-rose-600">{error}</span>
+      )}
     </label>
   );
 }
@@ -108,19 +111,26 @@ export function ClientForm({ client }: { client?: Client }) {
             {client ? "Editar perfil" : "Nuevo cliente"}
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Los campos físicos sirven para calcular la edad y el IMC desde el perfil.
+            Los campos físicos sirven para calcular la edad y el{" "}
+            <TermTooltip term="IMC" /> desde el perfil.
           </p>
         </div>
         <form onSubmit={form.handleSubmit(onSubmit)} className="p-6">
           <div className="grid gap-5 md:grid-cols-2">
-            <Field label="Nombre" error={form.formState.errors.firstName?.message}>
+            <Field
+              label="Nombre"
+              error={form.formState.errors.firstName?.message}
+            >
               <Input
                 {...form.register("firstName")}
                 className={inputClass}
                 placeholder="Ej. Ligia"
               />
             </Field>
-            <Field label="Apellido" error={form.formState.errors.lastName?.message}>
+            <Field
+              label="Apellido"
+              error={form.formState.errors.lastName?.message}
+            >
               <Input
                 {...form.register("lastName")}
                 className={inputClass}
@@ -138,7 +148,10 @@ export function ClientForm({ client }: { client?: Client }) {
                 placeholder="cliente@email.com"
               />
             </Field>
-            <Field label="Teléfono" error={form.formState.errors.phone?.message}>
+            <Field
+              label="Teléfono"
+              error={form.formState.errors.phone?.message}
+            >
               <Input
                 {...form.register("phone")}
                 className={inputClass}
@@ -149,9 +162,16 @@ export function ClientForm({ client }: { client?: Client }) {
               label="Fecha de nacimiento"
               error={form.formState.errors.birthDate?.message}
             >
-              <Input {...form.register("birthDate")} className={inputClass} type="date" />
+              <Input
+                {...form.register("birthDate")}
+                className={inputClass}
+                type="date"
+              />
             </Field>
-            <Field label="Estatura (cm)" error={form.formState.errors.heightCm?.message}>
+            <Field
+              label="Estatura (cm)"
+              error={form.formState.errors.heightCm?.message}
+            >
               <Input
                 {...form.register("heightCm", numberValue)}
                 className={inputClass}
@@ -172,7 +192,10 @@ export function ClientForm({ client }: { client?: Client }) {
               />
             </Field>
             <Field label="Nivel">
-              <select {...form.register("trainingLevel")} className={inputClass}>
+              <select
+                {...form.register("trainingLevel")}
+                className={inputClass}
+              >
                 <option value="">Seleccionar nivel</option>
                 <option value="BEGINNER">Principiante</option>
                 <option value="INTERMEDIATE">Intermedio</option>

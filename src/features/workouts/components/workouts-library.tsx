@@ -119,10 +119,14 @@ export function WorkoutsLibrary() {
   const [weekStart, setWeekStart] = useState(() => monday());
   const clients = useQuery({
     queryKey: ["workout-clients"],
-    queryFn: () => clientApi.list(new URLSearchParams({ limit: "50", status: "ACTIVE" })),
+    queryFn: () =>
+      clientApi.list(new URLSearchParams({ limit: "50", status: "ACTIVE" })),
   });
   const params = useMemo(() => {
-    const value = new URLSearchParams({ limit: "50", weekStart: dateValue(weekStart) });
+    const value = new URLSearchParams({
+      limit: "50",
+      weekStart: dateValue(weekStart),
+    });
     if (clientId) value.set("clientId", clientId);
     return value;
   }, [clientId, weekStart]);
@@ -130,9 +134,10 @@ export function WorkoutsLibrary() {
     queryKey: ["workouts", params.toString()],
     queryFn: () => workoutApi.list(params),
   });
-  const label = new Intl.DateTimeFormat("es", { day: "numeric", month: "short" }).format(
-    weekStart,
-  );
+  const label = new Intl.DateTimeFormat("es", {
+    day: "numeric",
+    month: "short",
+  }).format(weekStart);
   const end = new Date(weekStart);
   end.setDate(end.getDate() + 6);
   return (
@@ -154,7 +159,7 @@ export function WorkoutsLibrary() {
             <select
               value={clientId}
               onChange={(event) => setClientId(event.target.value)}
-              className="focus:ring-primary/20 h-10 min-w-56 appearance-none rounded-lg border border-slate-200 bg-white py-0 pr-10 pl-3 text-sm font-medium shadow-sm outline-none focus:ring-2"
+              className="focus:ring-primary/20 h-10 w-full appearance-none rounded-lg border border-slate-200 bg-white py-0 pr-10 pl-3 text-sm font-medium shadow-sm outline-none sm:min-w-56 sm:w-auto focus:ring-2"
             >
               <option value="">Todos los clientes</option>
               {clients.data?.items.map((client) => (
@@ -169,7 +174,9 @@ export function WorkoutsLibrary() {
             />
           </label>
           <Link
-            href={clientId ? `/workouts/new?clientId=${clientId}` : "/workouts/new"}
+            href={
+              clientId ? `/workouts/new?clientId=${clientId}` : "/workouts/new"
+            }
             className={cn(
               buttonVariants(),
               "gap-2 shadow-[0_8px_18px_rgba(91,75,183,0.25)]",
@@ -197,12 +204,15 @@ export function WorkoutsLibrary() {
             <ArrowLeft size={17} />
           </button>
           <div className="min-w-40 text-center">
-            <p className="text-xs font-semibold text-slate-500">Historial semanal</p>
+            <p className="text-xs font-semibold text-slate-500">
+              Historial semanal
+            </p>
             <p className="text-sm font-bold">
               {label} —{" "}
-              {new Intl.DateTimeFormat("es", { day: "numeric", month: "short" }).format(
-                end,
-              )}
+              {new Intl.DateTimeFormat("es", {
+                day: "numeric",
+                month: "short",
+              }).format(end)}
             </p>
           </div>
           <button

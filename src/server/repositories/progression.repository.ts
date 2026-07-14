@@ -2,7 +2,7 @@ import "server-only";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/server/db/prisma";
 
-const progressionInclude = {
+export const progressionInclude = {
   exercises: {
     orderBy: { position: "asc" },
     include: { sets: { orderBy: { position: "asc" } } },

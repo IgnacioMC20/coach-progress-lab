@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import type { ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
   CartesianGrid,
@@ -20,6 +22,7 @@ import {
   Trophy,
 } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
+import { TermTooltip } from "@/components/shared/term-tooltip";
 import { clientApi } from "@/features/clients/services/client-api";
 import { getProgression } from "@/features/progression/services/progression-api";
 import type {
@@ -28,7 +31,10 @@ import type {
 } from "@/features/progression/types/progression";
 import { cn } from "@/lib/utils";
 
-const dateFormatter = new Intl.DateTimeFormat("es", { day: "numeric", month: "short" });
+const dateFormatter = new Intl.DateTimeFormat("es", {
+  day: "numeric",
+  month: "short",
+});
 
 function Metric({
   icon: Icon,
@@ -37,7 +43,7 @@ function Metric({
   tone,
 }: {
   icon: typeof Trophy;
-  label: string;
+  label: ReactNode;
   value: string;
   tone: string;
 }) {
@@ -47,19 +53,23 @@ function Metric({
         <Icon size={18} />
       </div>
       <p className="mt-4 text-xs font-medium text-slate-500">{label}</p>
-      <p className="mt-1 text-xl font-bold tracking-tight text-slate-900">{value}</p>
+      <p className="mt-1 text-xl font-bold tracking-tight text-slate-900">
+        {value}
+      </p>
     </div>
   );
 }
 
 function ProgressChart({
   title,
+  term,
   history,
   dataKey,
   color,
   suffix,
 }: {
   title: string;
+  term?: "e1RM";
   history: ProgressionHistoryPoint[];
   dataKey: "e1RmKg" | "volumeKg";
   color: string;
@@ -71,15 +81,26 @@ function ProgressChart({
   }));
   return (
     <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_8px_24px_rgba(32,23,67,0.035)]">
-      <h2 className="font-bold text-slate-900">{title}</h2>
-      <div className="mt-4 h-56" role="img" aria-label={`Tendencia de ${title}`}>
+      <h2 className="font-bold text-slate-900">
+        {term ? <TermTooltip term={term} /> : title}
+        {term ? title.replace(term, "") : ""}
+      </h2>
+      <div
+        className="mt-4 h-56"
+        role="img"
+        aria-label={`Tendencia de ${title}`}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={data}
             title={`Tendencia de ${title}`}
             margin={{ left: -18, right: 6 }}
           >
-            <CartesianGrid vertical={false} stroke="#e7e9f0" strokeDasharray="3 3" />
+            <CartesianGrid
+              vertical={false}
+              stroke="#e7e9f0"
+              strokeDasharray="3 3"
+            />
             <XAxis
               dataKey="date"
               axisLine={false}
@@ -93,8 +114,14 @@ function ProgressChart({
               width={42}
             />
             <Tooltip
-              formatter={(value) => (value === null ? "—" : `${value}${suffix}`)}
-              contentStyle={{ borderRadius: 12, borderColor: "#e2e8f0", fontSize: 12 }}
+              formatter={(value) =>
+                value === null ? "—" : `${value}${suffix}`
+              }
+              contentStyle={{
+                borderRadius: 12,
+                borderColor: "#e2e8f0",
+                fontSize: 12,
+              }}
             />
             <Line
               type="monotone"
@@ -130,25 +157,31 @@ function ExerciseCard({ exercise }: { exercise: ExerciseProgression }) {
               {exercise.exerciseName}
             </h2>
             <p className="mt-0.5 text-xs text-slate-500">
-              {exercise.sessionCount} exposiciones · {exercise.totalVolumeKg.toFixed(0)}{" "}
-              kg
+              {exercise.sessionCount} exposiciones ·{" "}
+              {exercise.totalVolumeKg.toFixed(0)} kg
             </p>
           </div>
         </div>
         {exercise.bestE1RmKg !== null && (
           <span className="bg-pink/45 rounded-full px-2.5 py-1 text-[11px] font-bold text-fuchsia-800">
-            PR {exercise.bestE1RmKg} kg
+            <TermTooltip term="PR" /> {exercise.bestE1RmKg} kg
           </span>
         )}
       </div>
       <div className="mt-5 grid grid-cols-3 divide-x divide-slate-100 rounded-xl bg-slate-50 px-2 py-3 text-center">
         <div>
           <p className="text-[10px] text-slate-500">Línea base</p>
-          <p className="mt-0.5 text-sm font-bold">{exercise.baselineE1RmKg ?? "—"} kg</p>
+          <p className="mt-0.5 text-sm font-bold">
+            {exercise.baselineE1RmKg ?? "—"} kg
+          </p>
         </div>
         <div>
-          <p className="text-[10px] text-slate-500">e1RM actual</p>
-          <p className="mt-0.5 text-sm font-bold">{exercise.currentE1RmKg ?? "—"} kg</p>
+          <p className="text-[10px] text-slate-500">
+            <TermTooltip term="e1RM" /> actual
+          </p>
+          <p className="mt-0.5 text-sm font-bold">
+            {exercise.currentE1RmKg ?? "—"} kg
+          </p>
         </div>
         <div>
           <p className="text-[10px] text-slate-500">Cambio</p>
@@ -192,11 +225,15 @@ function ExerciseCard({ exercise }: { exercise: ExerciseProgression }) {
 }
 
 export function ProgressionDashboard() {
-  const [clientId, setClientId] = useState("");
+  const searchParams = useSearchParams();
+  const [clientId, setClientId] = useState(
+    () => searchParams.get("clientId") ?? "",
+  );
   const [exerciseId, setExerciseId] = useState("");
   const clients = useQuery({
     queryKey: ["progression-clients"],
-    queryFn: () => clientApi.list(new URLSearchParams({ limit: "50", status: "ACTIVE" })),
+    queryFn: () =>
+      clientApi.list(new URLSearchParams({ limit: "50", status: "ACTIVE" })),
   });
   const progression = useQuery({
     queryKey: ["progression", clientId],
@@ -204,8 +241,9 @@ export function ProgressionDashboard() {
     enabled: Boolean(clientId),
   });
   const selectedExercise =
-    progression.data?.exercises.find((exercise) => exercise.exerciseId === exerciseId) ??
-    progression.data?.exercises[0];
+    progression.data?.exercises.find(
+      (exercise) => exercise.exerciseId === exerciseId,
+    ) ?? progression.data?.exercises[0];
   return (
     <section className="mx-auto max-w-7xl">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -217,8 +255,8 @@ export function ProgressionDashboard() {
             Progresión
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Récords, carga y señales de intervención calculadas desde el entrenamiento
-            real.
+            Récords, carga y señales de intervención calculadas desde el
+            entrenamiento real.
           </p>
         </div>
         <label className="relative">
@@ -229,7 +267,7 @@ export function ProgressionDashboard() {
               setClientId(event.target.value);
               setExerciseId("");
             }}
-            className="focus:ring-primary/20 h-10 min-w-64 appearance-none rounded-lg border border-slate-200 bg-white py-0 pr-10 pl-3 text-sm font-medium shadow-sm outline-none focus:ring-2"
+            className="focus:ring-primary/20 h-10 w-full appearance-none rounded-lg border border-slate-200 bg-white py-0 pr-10 pl-3 text-sm font-medium shadow-sm outline-none sm:min-w-64 sm:w-auto focus:ring-2"
           >
             <option value="">Seleccionar cliente</option>
             {clients.data?.items.map((client) => (
@@ -248,7 +286,8 @@ export function ProgressionDashboard() {
       {!clientId ? (
         <div className="border-lavender/70 bg-lavender/15 mt-8 flex items-center gap-3 rounded-2xl border p-5 text-sm text-slate-600">
           <TrendingUp className="text-primary" size={22} />
-          Selecciona un cliente con sesiones completadas para calcular su progresión.
+          Selecciona un cliente con sesiones completadas para calcular su
+          progresión.
         </div>
       ) : progression.isPending ? (
         <div className="mt-8 h-120 animate-pulse rounded-2xl border bg-white" />
@@ -279,7 +318,11 @@ export function ProgressionDashboard() {
             />
             <Metric
               icon={TrendingUp}
-              label="Cambio e1RM promedio"
+              label={
+                <span className="inline-flex items-center gap-1">
+                  Cambio <TermTooltip term="e1RM" /> promedio
+                </span>
+              }
               value={
                 progression.data.summary.averageE1RmChangePercentage === null
                   ? "Sin línea base"
@@ -299,18 +342,24 @@ export function ProgressionDashboard() {
             <section className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_8px_24px_rgba(32,23,67,0.035)]">
               <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                 <div>
-                  <h2 className="font-bold text-slate-900">Tendencia por ejercicio</h2>
+                  <h2 className="font-bold text-slate-900">
+                    Tendencia por ejercicio
+                  </h2>
                   <p className="mt-1 text-sm text-slate-500">
-                    e1RM estimado con Epley y volumen realizado por sesión.
+                    <TermTooltip term="e1RM" /> estimado con Epley y volumen
+                    realizado por sesión.
                   </p>
                 </div>
                 <select
                   value={selectedExercise.exerciseId}
                   onChange={(event) => setExerciseId(event.target.value)}
-                  className="focus:ring-primary/20 h-10 min-w-56 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold outline-none focus:ring-2"
+                  className="focus:ring-primary/20 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold outline-none sm:min-w-56 sm:w-auto focus:ring-2"
                 >
                   {progression.data.exercises.map((exercise) => (
-                    <option key={exercise.exerciseId} value={exercise.exerciseId}>
+                    <option
+                      key={exercise.exerciseId}
+                      value={exercise.exerciseId}
+                    >
                       {exercise.exerciseName}
                     </option>
                   ))}
@@ -319,6 +368,7 @@ export function ProgressionDashboard() {
               <div className="mt-5 grid gap-5 lg:grid-cols-2">
                 <ProgressChart
                   title="e1RM estimado"
+                  term="e1RM"
                   history={selectedExercise.history}
                   dataKey="e1RmKg"
                   color="#5B4BB7"
@@ -336,7 +386,9 @@ export function ProgressionDashboard() {
           )}
 
           <div className="mt-8">
-            <h2 className="text-xl font-bold tracking-tight">Acciones por ejercicio</h2>
+            <h2 className="text-xl font-bold tracking-tight">
+              Acciones por ejercicio
+            </h2>
             <p className="mt-1 text-sm text-slate-500">
               Revisa las sugerencias antes de modificar la programación.
             </p>

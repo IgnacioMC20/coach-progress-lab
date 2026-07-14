@@ -1,4 +1,4 @@
-# Coach Progress
+# Coach Progress Lab
 
 Aplicación full-stack para administrar clientes de coaching, su biblioteca de ejercicios, rutinas, sesiones realizadas, check-ins semanales y progresión. Incluye la base técnica y las Fases 2 a 7 del roadmap; los reportes permanecen planificados.
 
@@ -33,7 +33,7 @@ Crea `.env` a partir de `.env.example` y ajusta sus valores cuando sea necesario
 
 ```env
 DATABASE_URL="mongodb://localhost:27017/coach_progress?replicaSet=rs0"
-NEXT_PUBLIC_APP_NAME="Coach Progress"
+NEXT_PUBLIC_APP_NAME="Coach Progress Lab"
 ```
 
 `DATABASE_URL` se valida en código de servidor y nunca se importa desde componentes de cliente. Solo las variables con prefijo `NEXT_PUBLIC_` llegan al navegador.

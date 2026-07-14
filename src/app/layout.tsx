@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 export const metadata: Metadata = {
-  title: "Coach Progress",
+  title: "Coach Progress Lab",
   description: "Administración para coaches",
 };
 export default function RootLayout({

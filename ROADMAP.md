@@ -1,4 +1,4 @@
-# Roadmap inicial — Coach Progress
+# Roadmap inicial — Coach Progress Lab
 
 ## Fase 1: Base técnica — completada
 

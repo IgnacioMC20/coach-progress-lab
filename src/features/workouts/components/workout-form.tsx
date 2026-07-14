@@ -8,9 +8,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TermTooltip } from "@/components/shared/term-tooltip";
 import { clientApi } from "@/features/clients/services/client-api";
 import { exerciseApi } from "@/features/exercises/services/exercise-api";
-import { techniqueLabel, workoutStatusLabel } from "@/features/workouts/workout-labels";
+import {
+  techniqueLabel,
+  workoutStatusLabel,
+} from "@/features/workouts/workout-labels";
 import { workoutApi } from "@/features/workouts/services/workout-api";
 import {
   workoutInputSchema,
@@ -47,7 +51,10 @@ const newSet = (): LoggedSet => ({
   technique: "GOOD",
   painLevel: 0,
 });
-const newExercise = (): LoggedExercise => ({ exerciseId: "", sets: [newSet()] });
+const newExercise = (): LoggedExercise => ({
+  exerciseId: "",
+  sets: [newSet()],
+});
 const dateNow = () => new Date().toISOString().slice(0, 10);
 function fromWorkout(workout?: WorkoutSession): LoggedExercise[] {
   return (
@@ -66,7 +73,13 @@ function fromWorkout(workout?: WorkoutSession): LoggedExercise[] {
     })) ?? [newExercise()]
   );
 }
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="grid gap-1.5 text-sm font-semibold text-slate-700">
       <span>{label}</span>
@@ -92,7 +105,8 @@ export function WorkoutForm({ workout }: { workout?: WorkoutSession }) {
   });
   const clients = useQuery({
     queryKey: ["workout-form-clients"],
-    queryFn: () => clientApi.list(new URLSearchParams({ limit: "50", status: "ACTIVE" })),
+    queryFn: () =>
+      clientApi.list(new URLSearchParams({ limit: "50", status: "ACTIVE" })),
   });
   const exerciseOptions = useQuery({
     queryKey: ["workout-form-exercises"],
@@ -106,7 +120,8 @@ export function WorkoutForm({ workout }: { workout?: WorkoutSession }) {
         : workoutInputSchema.safeParse(payload);
       if (!parsed.success)
         throw new Error(
-          parsed.error.issues[0]?.message ?? "Revisa los datos del entrenamiento",
+          parsed.error.issues[0]?.message ??
+            "Revisa los datos del entrenamiento",
         );
       return workout
         ? workoutApi.update(workout.id, parsed.data)
@@ -119,7 +134,10 @@ export function WorkoutForm({ workout }: { workout?: WorkoutSession }) {
       router.refresh();
     },
   });
-  const updateExercise = (exerciseIndex: number, patch: Partial<LoggedExercise>) =>
+  const updateExercise = (
+    exerciseIndex: number,
+    patch: Partial<LoggedExercise>,
+  ) =>
     setExercises((current) =>
       current.map((exercise, index) =>
         index === exerciseIndex ? { ...exercise, ...patch } : exercise,
@@ -164,7 +182,8 @@ export function WorkoutForm({ workout }: { workout?: WorkoutSession }) {
             {workout ? "Editar sesión" : "Nueva sesión"}
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Registra lo realizado serie por serie, incluidas señales de técnica y dolor.
+            Registra lo realizado serie por serie, incluidas señales de técnica
+            y dolor.
           </p>
           <div className="mt-6 grid gap-5 md:grid-cols-3">
             <Field label="Cliente">
@@ -221,9 +240,11 @@ export function WorkoutForm({ workout }: { workout?: WorkoutSession }) {
                 <select
                   value={exercise.exerciseId}
                   onChange={(event) =>
-                    updateExercise(exerciseIndex, { exerciseId: event.target.value })
+                    updateExercise(exerciseIndex, {
+                      exerciseId: event.target.value,
+                    })
                   }
-                  className="focus:border-primary h-10 min-w-56 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold outline-none"
+                  className="focus:border-primary h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold outline-none sm:min-w-56 sm:w-auto"
                 >
                   <option value="">
                     {exerciseOptions.isPending
@@ -264,7 +285,9 @@ export function WorkoutForm({ workout }: { workout?: WorkoutSession }) {
                         type="button"
                         onClick={() =>
                           updateExercise(exerciseIndex, {
-                            sets: exercise.sets.filter((_, index) => index !== setIndex),
+                            sets: exercise.sets.filter(
+                              (_, index) => index !== setIndex,
+                            ),
                           })
                         }
                         disabled={exercise.sets.length === 1}
@@ -324,24 +347,27 @@ export function WorkoutForm({ workout }: { workout?: WorkoutSession }) {
                         aria-label="Duración en segundos"
                         placeholder="Tiempo s"
                       />
-                      <Input
-                        value={set.rir ?? ""}
-                        onChange={(event) =>
-                          updateSet(exerciseIndex, setIndex, {
-                            rir:
-                              event.target.value === ""
-                                ? undefined
-                                : Number(event.target.value),
-                          })
-                        }
-                        className="border-purple/35 h-9"
-                        type="number"
-                        min="0"
-                        max="5"
-                        step="0.5"
-                        aria-label="RIR"
-                        placeholder="RIR"
-                      />
+                      <div className="flex min-w-0 items-center gap-1">
+                        <Input
+                          value={set.rir ?? ""}
+                          onChange={(event) =>
+                            updateSet(exerciseIndex, setIndex, {
+                              rir:
+                                event.target.value === ""
+                                  ? undefined
+                                  : Number(event.target.value),
+                            })
+                          }
+                          className="border-purple/35 h-9 min-w-0 w-auto flex-1"
+                          type="number"
+                          min="0"
+                          max="5"
+                          step="0.5"
+                          aria-label="RIR, repeticiones en reserva"
+                          placeholder="RIR"
+                        />
+                        <TermTooltip term="RIR" />
+                      </div>
                       <select
                         value={set.technique ?? ""}
                         onChange={(event) =>
@@ -354,11 +380,13 @@ export function WorkoutForm({ workout }: { workout?: WorkoutSession }) {
                         className="border-purple/35 h-9 rounded-lg border bg-white px-2 text-xs outline-none"
                       >
                         <option value="">Técnica</option>
-                        {Object.entries(techniqueLabel).map(([value, label]) => (
-                          <option key={value} value={value}>
-                            {label}
-                          </option>
-                        ))}
+                        {Object.entries(techniqueLabel).map(
+                          ([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ),
+                        )}
                       </select>
                       <Input
                         value={set.painLevel ?? ""}
@@ -395,7 +423,9 @@ export function WorkoutForm({ workout }: { workout?: WorkoutSession }) {
               <button
                 type="button"
                 onClick={() =>
-                  updateExercise(exerciseIndex, { sets: [...exercise.sets, newSet()] })
+                  updateExercise(exerciseIndex, {
+                    sets: [...exercise.sets, newSet()],
+                  })
                 }
                 className="text-primary mt-3 inline-flex items-center gap-1.5 text-xs font-bold hover:underline"
               >

@@ -21,14 +21,19 @@ type ExerciseObservation = {
 type ExerciseReference = Awaited<
   ReturnType<typeof progressionRepository.findExercises>
 >[number];
+type ProgressionClient = { id: string; firstName: string; lastName: string };
 
 const round = (value: number) => Number(value.toFixed(1));
 
-function historyPoint(observation: ExerciseObservation): ProgressionHistoryPoint {
+function historyPoint(
+  observation: ExerciseObservation,
+): ProgressionHistoryPoint {
   const weightedSets = observation.sets.filter(
     (set) => set.weightKg !== null && set.reps !== null,
   );
-  const e1Rms = weightedSets.map((set) => calculateE1RmKg(set.weightKg!, set.reps!));
+  const e1Rms = weightedSets.map((set) =>
+    calculateE1RmKg(set.weightKg!, set.reps!),
+  );
   const weights = weightedSets.map((set) => set.weightKg!);
   return {
     date: observation.date.toISOString(),
@@ -72,7 +77,9 @@ function alerts(
   const result: ProgressionAlert[] = [];
   const latestDate = observations.at(-1)?.date;
   if (!latestDate) return result;
-  const recentCutoff = new Date(latestDate.getTime() - 14 * 24 * 60 * 60 * 1_000);
+  const recentCutoff = new Date(
+    latestDate.getTime() - 14 * 24 * 60 * 60 * 1_000,
+  );
   const pain = observations
     .filter((observation) => observation.date >= recentCutoff)
     .flatMap((observation) => observation.sets)
@@ -84,15 +91,24 @@ function alerts(
       null,
     );
   if (pain !== null && pain >= 5)
-    result.push({ type: "PAIN", message: `Dolor ${pain}/10 reportado recientemente.` });
+    result.push({
+      type: "PAIN",
+      message: `Dolor ${pain}/10 reportado recientemente.`,
+    });
 
-  const recentE1Rms = history.filter((point) => point.e1RmKg !== null).slice(-3);
+  const recentE1Rms = history
+    .filter((point) => point.e1RmKg !== null)
+    .slice(-3);
   if (recentE1Rms.length === 3) {
     const previousBest = Math.max(
       ...recentE1Rms.slice(0, -1).map((point) => point.e1RmKg ?? 0),
     );
     const latest = recentE1Rms[2]?.e1RmKg;
-    if (latest !== null && latest !== undefined && latest <= previousBest * 1.005)
+    if (
+      latest !== null &&
+      latest !== undefined &&
+      latest <= previousBest * 1.005
+    )
       result.push({
         type: "STAGNATION",
         message: "Sin mejora de e1RM en las últimas tres exposiciones.",
@@ -127,16 +143,78 @@ function buildExercise(
     bestE1RmKg: best?.e1RmKg ?? null,
     personalRecordAt: best?.date ?? null,
     e1RmChangePercentage: change,
-    totalVolumeKg: round(history.reduce((total, point) => total + point.volumeKg, 0)),
+    totalVolumeKg: round(
+      history.reduce((total, point) => total + point.volumeKg, 0),
+    ),
     latestVolumeKg: history.at(-1)?.volumeKg ?? 0,
     maxWeightKg:
       Math.max(
-        ...history.flatMap((point) => (point.maxWeightKg ? [point.maxWeightKg] : [])),
+        ...history.flatMap((point) =>
+          point.maxWeightKg ? [point.maxWeightKg] : [],
+        ),
         0,
       ) || null,
     suggestion: suggestion(observations.at(-1), reference),
     alerts: alerts(history, observations),
     history,
+  };
+}
+
+export function calculateProgression(
+  client: ProgressionClient,
+  sessions: ProgressionSessionRecord[],
+  references: ExerciseReference[],
+): ProgressionDashboard {
+  const observations = new Map<string, ExerciseObservation[]>();
+  for (const session of sessions) {
+    for (const exercise of session.exercises) {
+      const current = observations.get(exercise.exerciseId) ?? [];
+      current.push({ date: session.performedAt, sets: exercise.sets });
+      observations.set(exercise.exerciseId, current);
+    }
+  }
+  const exerciseIds = [...observations.keys()];
+  const referenceMap = new Map(
+    references.map((exercise) => [exercise.id, exercise]),
+  );
+  const exercises = exerciseIds
+    .map((exerciseId) =>
+      buildExercise(
+        exerciseId,
+        observations.get(exerciseId)!,
+        referenceMap.get(exerciseId),
+      ),
+    )
+    .sort((left, right) => right.totalVolumeKg - left.totalVolumeKg);
+  const changes = exercises.flatMap((exercise) =>
+    exercise.e1RmChangePercentage === null
+      ? []
+      : [exercise.e1RmChangePercentage],
+  );
+  return {
+    clientId: client.id,
+    clientName: `${client.firstName} ${client.lastName}`,
+    exercises,
+    summary: {
+      totalVolumeKg: round(
+        exercises.reduce(
+          (total, exercise) => total + exercise.totalVolumeKg,
+          0,
+        ),
+      ),
+      personalRecords: exercises.filter(
+        (exercise) => exercise.bestE1RmKg !== null,
+      ).length,
+      alerts: exercises.reduce(
+        (total, exercise) => total + exercise.alerts.length,
+        0,
+      ),
+      averageE1RmChangePercentage: changes.length
+        ? round(
+            changes.reduce((total, value) => total + value, 0) / changes.length,
+          )
+        : null,
+    },
   };
 }
 
@@ -149,53 +227,26 @@ export const progressionService = {
         "An organization is required before calculating progression",
         409,
       );
-    const client = await progressionRepository.findClient(clientId, organization.id);
+    const client = await progressionRepository.findClient(
+      clientId,
+      organization.id,
+    );
     if (!client) throw new ApiError("NOT_FOUND", "Client not found", 404);
     const sessions = await progressionRepository.findCompletedSessions(
       client.id,
       organization.id,
     );
-    const observations = new Map<string, ExerciseObservation[]>();
-    for (const session of sessions) {
-      for (const exercise of session.exercises) {
-        const current = observations.get(exercise.exerciseId) ?? [];
-        current.push({ date: session.performedAt, sets: exercise.sets });
-        observations.set(exercise.exerciseId, current);
-      }
-    }
-    const exerciseIds = [...observations.keys()];
+    const exerciseIds = [
+      ...new Set(
+        sessions.flatMap((session) =>
+          session.exercises.map((exercise) => exercise.exerciseId),
+        ),
+      ),
+    ];
     const references = await progressionRepository.findExercises(
       exerciseIds,
       organization.id,
     );
-    const referenceMap = new Map(references.map((exercise) => [exercise.id, exercise]));
-    const exercises = exerciseIds
-      .map((exerciseId) =>
-        buildExercise(
-          exerciseId,
-          observations.get(exerciseId)!,
-          referenceMap.get(exerciseId),
-        ),
-      )
-      .sort((left, right) => right.totalVolumeKg - left.totalVolumeKg);
-    const changes = exercises.flatMap((exercise) =>
-      exercise.e1RmChangePercentage === null ? [] : [exercise.e1RmChangePercentage],
-    );
-    return {
-      clientId: client.id,
-      clientName: `${client.firstName} ${client.lastName}`,
-      exercises,
-      summary: {
-        totalVolumeKg: round(
-          exercises.reduce((total, exercise) => total + exercise.totalVolumeKg, 0),
-        ),
-        personalRecords: exercises.filter((exercise) => exercise.bestE1RmKg !== null)
-          .length,
-        alerts: exercises.reduce((total, exercise) => total + exercise.alerts.length, 0),
-        averageE1RmChangePercentage: changes.length
-          ? round(changes.reduce((total, value) => total + value, 0) / changes.length)
-          : null,
-      },
-    };
+    return calculateProgression(client, sessions, references);
   },
 };

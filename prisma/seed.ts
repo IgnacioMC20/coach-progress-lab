@@ -148,10 +148,17 @@ const demoExercises = [
 ];
 
 async function main() {
-  const organization =
-    (await prisma.organization.findFirst({
-      where: { name: "Coach Progress Demo" },
-    })) ?? (await prisma.organization.create({ data: { name: "Coach Progress Demo" } }));
+  const existingOrganization = await prisma.organization.findFirst({
+    where: { name: { in: ["Coach Progress Lab Demo", "Coach Progress Demo"] } },
+  });
+  const organization = existingOrganization
+    ? await prisma.organization.update({
+        where: { id: existingOrganization.id },
+        data: { name: "Coach Progress Lab Demo" },
+      })
+    : await prisma.organization.create({
+        data: { name: "Coach Progress Lab Demo" },
+      });
 
   const coach = await prisma.user.upsert({
     where: { email: "coach@coachprogress.local" },
@@ -175,10 +182,18 @@ async function main() {
     const client = existingClient
       ? await prisma.client.update({
           where: { id: existingClient.id },
-          data: { ...clientData, organizationId: organization.id, coachId: coach.id },
+          data: {
+            ...clientData,
+            organizationId: organization.id,
+            coachId: coach.id,
+          },
         })
       : await prisma.client.create({
-          data: { ...clientData, organizationId: organization.id, coachId: coach.id },
+          data: {
+            ...clientData,
+            organizationId: organization.id,
+            coachId: coach.id,
+          },
         });
 
     const assessment = await prisma.clientAssessment.findFirst({
@@ -205,10 +220,17 @@ async function main() {
   for (const exerciseData of demoExercises) {
     const exercise = await prisma.exercise.upsert({
       where: {
-        organizationId_name: { organizationId: organization.id, name: exerciseData.name },
+        organizationId_name: {
+          organizationId: organization.id,
+          name: exerciseData.name,
+        },
       },
       update: { ...exerciseData },
-      create: { ...exerciseData, organizationId: organization.id, substituteIds: [] },
+      create: {
+        ...exerciseData,
+        organizationId: organization.id,
+        substituteIds: [],
+      },
     });
     exerciseByName.set(exercise.name, exercise.id);
   }
@@ -222,7 +244,9 @@ async function main() {
   await Promise.all(
     Object.entries(substitutions).map(([name, replacementNames]) =>
       prisma.exercise.update({
-        where: { organizationId_name: { organizationId: organization.id, name } },
+        where: {
+          organizationId_name: { organizationId: organization.id, name },
+        },
         data: {
           substituteIds: replacementNames.flatMap((replacementName) => {
             const id = exerciseByName.get(replacementName);
@@ -262,7 +286,9 @@ async function main() {
                         exercises: {
                           create: [
                             {
-                              exerciseId: exerciseByName.get("Sentadilla con barra")!,
+                              exerciseId: exerciseByName.get(
+                                "Sentadilla con barra",
+                              )!,
                               position: 1,
                               sets: 4,
                               repsMin: 5,
@@ -271,7 +297,8 @@ async function main() {
                               restSeconds: 150,
                             },
                             {
-                              exerciseId: exerciseByName.get("Peso muerto rumano")!,
+                              exerciseId:
+                                exerciseByName.get("Peso muerto rumano")!,
                               position: 2,
                               sets: 3,
                               repsMin: 8,
@@ -298,7 +325,9 @@ async function main() {
                         exercises: {
                           create: [
                             {
-                              exerciseId: exerciseByName.get("Press de banca con barra")!,
+                              exerciseId: exerciseByName.get(
+                                "Press de banca con barra",
+                              )!,
                               position: 1,
                               sets: 4,
                               repsMin: 6,
@@ -537,10 +566,17 @@ async function main() {
         where: { clientId: ligia.id, checkInDate: checkIn.checkInDate },
       });
       if (existingCheckIn)
-        await prisma.checkIn.update({ where: { id: existingCheckIn.id }, data: checkIn });
+        await prisma.checkIn.update({
+          where: { id: existingCheckIn.id },
+          data: checkIn,
+        });
       else
         await prisma.checkIn.create({
-          data: { ...checkIn, clientId: ligia.id, organizationId: organization.id },
+          data: {
+            ...checkIn,
+            clientId: ligia.id,
+            organizationId: organization.id,
+          },
         });
     }
   }

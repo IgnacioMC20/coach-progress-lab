@@ -8,7 +8,6 @@ import {
   Dumbbell,
   LayoutDashboard,
   Menu,
-  Settings,
   TrendingUp,
   Users,
   X,
@@ -24,18 +23,17 @@ const items = [
   { href: "/workouts", label: "Entrenamientos", icon: Activity },
   { href: "/check-ins", label: "Check-ins", icon: ClipboardCheck },
   { href: "/progression", label: "Progresión", icon: TrendingUp },
-  { href: "/settings", label: "Configuración", icon: Settings },
 ];
 function Brand() {
   return (
-    <Link href="/clients" className="flex items-center gap-2.5">
-      <span className="bg-primary grid size-9 place-items-center rounded-xl text-lg font-black text-white">
-        C
+    <Link href="/dashboard" className="flex items-center gap-2.5">
+      <span className="bg-primary grid size-9 place-items-center rounded-xl text-[10px] font-black tracking-tight text-white">
+        CPL
       </span>
       <span className="text-sm leading-4 font-black tracking-tight text-slate-900">
         COACH
         <br />
-        PROGRESS
+        PROGRESS LAB
       </span>
     </Link>
   );
@@ -57,7 +55,9 @@ function Navigation({ onNavigate }: { onNavigate?: () => void }) {
     </nav>
   );
 }
-export function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export function DashboardLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   const [open, setOpen] = useState(false);
   return (
     <div className="min-h-screen bg-[#fafafc] md:flex">
@@ -88,7 +88,7 @@ export function DashboardLayout({ children }: Readonly<{ children: React.ReactNo
             <Menu size={18} />
           </Button>
           <div className="hidden text-sm font-medium text-slate-400 md:block">
-            Coach Progress / Administración
+            Coach Progress Lab / Administración
           </div>
           <div className="ml-auto flex items-center gap-4">
             <button

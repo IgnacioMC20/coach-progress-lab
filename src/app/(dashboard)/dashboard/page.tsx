@@ -1,4 +1,5 @@
-import { PlaceholderPage } from "@/components/layout/placeholder-page";
+import { ProgressDashboard } from "@/features/dashboard/components/progress-dashboard";
+
 export default function DashboardPage() {
-  return <PlaceholderPage title="Dashboard" />;
+  return <ProgressDashboard />;
 }

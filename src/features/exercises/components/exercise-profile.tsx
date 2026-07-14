@@ -12,6 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
+import { TermTooltip } from "@/components/shared/term-tooltip";
 import { Button } from "@/components/ui/button";
 import {
   equipmentLabel,
@@ -22,7 +23,7 @@ import {
 } from "@/features/exercises/exercise-labels";
 import { exerciseApi } from "@/features/exercises/services/exercise-api";
 
-function Detail({ label, value }: { label: string; value: string }) {
+function Detail({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
       <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
@@ -129,14 +130,25 @@ export function ExerciseProfile() {
                 label="Tipo de medición"
                 value={measurementTypeLabel[exercise.measurementType]}
               />
-              <Detail label="Equipo" value={equipmentLabel[exercise.equipment]} />
+              <Detail
+                label="Equipo"
+                value={equipmentLabel[exercise.equipment]}
+              />
               <Detail
                 label="Patrón"
                 value={movementPatternLabel[exercise.movementPattern]}
               />
               <Detail
                 label="Política"
-                value={progressionPolicyLabel[exercise.progressionPolicy]}
+                value={
+                  exercise.progressionPolicy === "RIR_BASED" ? (
+                    <>
+                      Basada en <TermTooltip term="RIR" />
+                    </>
+                  ) : (
+                    progressionPolicyLabel[exercise.progressionPolicy]
+                  )
+                }
               />
               <Detail
                 label="Incremento mínimo"
@@ -189,8 +201,8 @@ export function ExerciseProfile() {
               <h2 className="font-bold">Sustituciones aprobadas</h2>
             </div>
             <p className="mt-2 text-sm leading-5 text-slate-600">
-              Alternativas que puedes utilizar cuando el equipo, la técnica o el contexto
-              lo requieran.
+              Alternativas que puedes utilizar cuando el equipo, la técnica o el
+              contexto lo requieran.
             </p>
             {exercise.substitutes.length ? (
               <div className="mt-4 space-y-2">
@@ -216,8 +228,8 @@ export function ExerciseProfile() {
               <span className="text-primary mr-1 inline-flex align-middle">
                 <SlidersHorizontal size={14} />
               </span>
-              La política y el incremento preparan este ejercicio para su uso posterior en
-              rutinas.
+              La política y el incremento preparan este ejercicio para su uso
+              posterior en rutinas.
             </div>
           </aside>
         </div>

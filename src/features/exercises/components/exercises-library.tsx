@@ -68,7 +68,9 @@ function ExerciseCard({ exercise }: { exercise: Exercise }) {
         </span>
       </div>
       <div className="mt-4">
-        <h2 className="font-bold tracking-tight text-slate-900">{exercise.name}</h2>
+        <h2 className="font-bold tracking-tight text-slate-900">
+          {exercise.name}
+        </h2>
         <p className="mt-1 line-clamp-2 min-h-10 text-xs leading-5 text-slate-500">
           {exercise.description ?? "Sin descripción todavía."}
         </p>
@@ -147,8 +149,11 @@ export function ExercisesLibrary() {
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
-          <label className="relative min-w-56">
-            <Search className="absolute top-3 left-3 text-slate-400" size={17} />
+          <label className="relative w-full sm:w-auto sm:min-w-56">
+            <Search
+              className="absolute top-3 left-3 text-slate-400"
+              size={17}
+            />
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
@@ -217,12 +222,19 @@ export function ExercisesLibrary() {
               key={key}
               className="flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white px-4 py-4 shadow-[0_8px_24px_rgba(32,23,67,0.035)]"
             >
-              <div className={cn("grid size-11 place-items-center rounded-xl", tone)}>
+              <div
+                className={cn(
+                  "grid size-11 place-items-center rounded-xl",
+                  tone,
+                )}
+              >
                 <Icon size={21} />
               </div>
               <div>
                 <p className="text-xs font-medium text-slate-500">{label}</p>
-                <p className="text-2xl font-bold tracking-tight">{data.summary[key]}</p>
+                <p className="text-2xl font-bold tracking-tight">
+                  {data.summary[key]}
+                </p>
               </div>
             </div>
           ))}

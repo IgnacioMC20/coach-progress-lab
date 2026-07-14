@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Dumbbell, Pencil, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
+import { TermTooltip } from "@/components/shared/term-tooltip";
 import { Button } from "@/components/ui/button";
 import {
   techniqueLabel,
@@ -48,7 +49,8 @@ export function WorkoutProfile() {
     );
   const workout = query.data;
   const confirmDelete = () => {
-    if (window.confirm(`¿Eliminar la sesión de ${workout.clientName}?`)) remove.mutate();
+    if (window.confirm(`¿Eliminar la sesión de ${workout.clientName}?`))
+      remove.mutate();
   };
   return (
     <section className="mx-auto max-w-5xl">
@@ -129,7 +131,9 @@ export function WorkoutProfile() {
                   <p className="text-primary text-xs font-bold tracking-[0.14em] uppercase">
                     Ejercicio {exercise.position}
                   </p>
-                  <h2 className="mt-1 text-lg font-bold">{exercise.exerciseName}</h2>
+                  <h2 className="mt-1 text-lg font-bold">
+                    {exercise.exerciseName}
+                  </h2>
                   <p className="text-xs text-slate-500">
                     {exercise.equipment ?? "Ejercicio eliminado"}
                   </p>
@@ -149,7 +153,9 @@ export function WorkoutProfile() {
                       <th className="pr-4 pb-2">Carga</th>
                       <th className="pr-4 pb-2">Reps</th>
                       <th className="pr-4 pb-2">Tiempo</th>
-                      <th className="pr-4 pb-2">RIR</th>
+                      <th className="pr-4 pb-2">
+                        <TermTooltip term="RIR" />
+                      </th>
                       <th className="pr-4 pb-2">Técnica</th>
                       <th className="pr-4 pb-2">Dolor</th>
                       <th className="pb-2">Observación</th>
@@ -162,9 +168,13 @@ export function WorkoutProfile() {
                         className="border-b border-slate-100 last:border-0"
                       >
                         <td className="py-3 pr-4 font-bold">{set.position}</td>
-                        <td className="py-3 pr-4">{value(set.weightKg, " kg")}</td>
+                        <td className="py-3 pr-4">
+                          {value(set.weightKg, " kg")}
+                        </td>
                         <td className="py-3 pr-4">{value(set.reps, "")}</td>
-                        <td className="py-3 pr-4">{value(set.durationSeconds, " s")}</td>
+                        <td className="py-3 pr-4">
+                          {value(set.durationSeconds, " s")}
+                        </td>
                         <td className="py-3 pr-4">{value(set.rir, "")}</td>
                         <td className="py-3 pr-4">
                           {set.technique ? techniqueLabel[set.technique] : "—"}
@@ -172,7 +182,9 @@ export function WorkoutProfile() {
                         <td className="py-3 pr-4">
                           {set.painLevel === null ? "—" : `${set.painLevel}/10`}
                         </td>
-                        <td className="py-3 text-slate-600">{set.notes ?? "—"}</td>
+                        <td className="py-3 text-slate-600">
+                          {set.notes ?? "—"}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

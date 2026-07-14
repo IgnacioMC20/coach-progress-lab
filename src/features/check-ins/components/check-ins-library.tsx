@@ -28,7 +28,10 @@ import { checkInApi } from "@/features/check-ins/services/check-in-api";
 import type { CheckIn } from "@/features/check-ins/types/check-in";
 import { cn } from "@/lib/utils";
 
-const dateFormatter = new Intl.DateTimeFormat("es", { day: "numeric", month: "short" });
+const dateFormatter = new Intl.DateTimeFormat("es", {
+  day: "numeric",
+  month: "short",
+});
 const fullDateFormatter = new Intl.DateTimeFormat("es", {
   day: "numeric",
   month: "long",
@@ -52,7 +55,9 @@ function Metric({
         <Icon size={18} />
       </div>
       <p className="mt-4 text-xs font-medium text-slate-500">{label}</p>
-      <p className="mt-1 text-xl font-bold tracking-tight text-slate-900">{value}</p>
+      <p className="mt-1 text-xl font-bold tracking-tight text-slate-900">
+        {value}
+      </p>
     </div>
   );
 }
@@ -87,14 +92,22 @@ function TrendChart({
           {data.length} semanas
         </span>
       </div>
-      <div className="mt-4 h-48" role="img" aria-label={`Tendencia de ${title}`}>
+      <div
+        className="mt-4 h-48"
+        role="img"
+        aria-label={`Tendencia de ${title}`}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={chartData}
             title={`Tendencia de ${title}`}
             margin={{ left: -18, right: 6 }}
           >
-            <CartesianGrid vertical={false} stroke="#e7e9f0" strokeDasharray="3 3" />
+            <CartesianGrid
+              vertical={false}
+              stroke="#e7e9f0"
+              strokeDasharray="3 3"
+            />
             <XAxis
               dataKey="date"
               axisLine={false}
@@ -108,8 +121,14 @@ function TrendChart({
               width={38}
             />
             <Tooltip
-              formatter={(value) => (value === null ? "—" : `${value}${suffix}`)}
-              contentStyle={{ borderRadius: 12, borderColor: "#e2e8f0", fontSize: 12 }}
+              formatter={(value) =>
+                value === null ? "—" : `${value}${suffix}`
+              }
+              contentStyle={{
+                borderRadius: 12,
+                borderColor: "#e2e8f0",
+                fontSize: 12,
+              }}
             />
             <Line
               type="monotone"
@@ -126,12 +145,20 @@ function TrendChart({
   );
 }
 
-function CheckInCard({ checkIn, onRemove }: { checkIn: CheckIn; onRemove: () => void }) {
+function CheckInCard({
+  checkIn,
+  onRemove,
+}: {
+  checkIn: CheckIn;
+  onRemove: () => void;
+}) {
   return (
     <article className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_8px_24px_rgba(32,23,67,0.035)]">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="font-bold tracking-tight text-slate-900">{checkIn.clientName}</p>
+          <p className="font-bold tracking-tight text-slate-900">
+            {checkIn.clientName}
+          </p>
           <p className="mt-1 text-xs text-slate-500">
             {fullDateFormatter.format(new Date(checkIn.checkInDate))}
           </p>
@@ -170,7 +197,9 @@ function CheckInCard({ checkIn, onRemove }: { checkIn: CheckIn; onRemove: () => 
         <div>
           <p className="text-[10px] text-slate-500">Adherencia</p>
           <p className="mt-0.5 text-sm font-bold">
-            {checkIn.nutritionAdherence === null ? "—" : `${checkIn.nutritionAdherence}%`}
+            {checkIn.nutritionAdherence === null
+              ? "—"
+              : `${checkIn.nutritionAdherence}%`}
           </p>
         </div>
       </div>
@@ -198,7 +227,8 @@ export function CheckInsLibrary() {
   const queryClient = useQueryClient();
   const clients = useQuery({
     queryKey: ["check-in-clients"],
-    queryFn: () => clientApi.list(new URLSearchParams({ limit: "50", status: "ACTIVE" })),
+    queryFn: () =>
+      clientApi.list(new URLSearchParams({ limit: "50", status: "ACTIVE" })),
   });
   const params = useMemo(() => {
     const value = new URLSearchParams({ limit: "20" });
@@ -211,9 +241,12 @@ export function CheckInsLibrary() {
   });
   const remove = useMutation({
     mutationFn: (id: string) => checkInApi.remove(id),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["check-ins"] }),
+    onSuccess: () =>
+      void queryClient.invalidateQueries({ queryKey: ["check-ins"] }),
   });
-  const selectedClient = clients.data?.items.find((client) => client.id === clientId);
+  const selectedClient = clients.data?.items.find(
+    (client) => client.id === clientId,
+  );
   return (
     <section className="mx-auto max-w-7xl">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -232,7 +265,7 @@ export function CheckInsLibrary() {
           <select
             value={clientId}
             onChange={(event) => setClientId(event.target.value)}
-            className="focus:ring-primary/20 h-10 min-w-56 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium shadow-sm outline-none focus:ring-2"
+            className="focus:ring-primary/20 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium shadow-sm outline-none sm:min-w-56 sm:w-auto focus:ring-2"
           >
             <option value="">Todos los clientes</option>
             {clients.data?.items.map((client) => (
@@ -302,7 +335,9 @@ export function CheckInsLibrary() {
         <div className="mt-6 grid gap-5 xl:grid-cols-3">
           <TrendChart
             title="Peso"
-            detail={selectedClient ? selectedClient.fullName : "Historial del cliente"}
+            detail={
+              selectedClient ? selectedClient.fullName : "Historial del cliente"
+            }
             data={checkIns.data.trend}
             dataKey="weightKg"
             color="#5B4BB7"
@@ -334,7 +369,9 @@ export function CheckInsLibrary() {
 
       <div className="mt-8 flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold tracking-tight">Registros recientes</h2>
+          <h2 className="text-xl font-bold tracking-tight">
+            Registros recientes
+          </h2>
           <p className="mt-1 text-sm text-slate-500">
             Medidas, hábitos y contexto semanal.
           </p>
@@ -367,7 +404,11 @@ export function CheckInsLibrary() {
                 key={checkIn.id}
                 checkIn={checkIn}
                 onRemove={() => {
-                  if (window.confirm(`¿Eliminar el check-in de ${checkIn.clientName}?`))
+                  if (
+                    window.confirm(
+                      `¿Eliminar el check-in de ${checkIn.clientName}?`,
+                    )
+                  )
                     remove.mutate(checkIn.id);
                 }}
               />
@@ -380,7 +421,10 @@ export function CheckInsLibrary() {
               description="Registra el primer seguimiento semanal para empezar a ver tendencias."
             />
             <div className="flex justify-center">
-              <Link href="/check-ins/new" className={cn(buttonVariants(), "gap-2")}>
+              <Link
+                href="/check-ins/new"
+                className={cn(buttonVariants(), "gap-2")}
+              >
                 <Plus size={16} />
                 Nuevo check-in
               </Link>
