@@ -1,0 +1,22 @@
+@import "tailwindcss";
+@theme inline {
+  --color-pink: #ffd6ff;
+  --color-lavender: #e7c6ff;
+  --color-purple: #c8b6ff;
+  --color-periwinkle: #b8c0ff;
+  --color-blue: #bbd0ff;
+  --color-primary: #5b4bb7;
+  --color-background: #fafafc;
+  --color-foreground: #111827;
+  --font-sans: "Avenir Next", "Segoe UI", sans-serif;
+  --font-display: "Avenir Next", "Segoe UI", sans-serif;
+}
+* {
+  border-color: rgb(200 182 255 / 0.5);
+}
+body {
+  min-height: 100vh;
+  background: #fafafc;
+  color: #111827;
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+}

@@ -1,0 +1,42 @@
+# Progreso
+
+## 2026-07-13
+
+- Se inspeccionó la base existente y la referencia visual entregada.
+- Se inició el plan para completar Fases 1 y 2.
+- Se revisó la guía actual de Prisma y React Hook Form antes de diseñar los contratos de datos.
+- Se añadió el perfil físico y de entrenamiento de clientes, la entidad de evaluaciones, migración `client_profiles` y seed actualizado.
+- Se implementaron APIs REST para listar, crear, consultar, editar y eliminar clientes, y registrar evaluaciones.
+- Se sustituyó el selector mock por una interfaz con TanStack Query y se añadieron fichas, formularios y perfil de cliente.
+- Se completó la edición de evaluaciones, se retiraron advertencias de ESLint y se validó la interfaz local con cuatro clientes reales sembrados.
+- Validaciones finales: typecheck, lint, 3 tests, build y seed correctos. `GET /api/health` y `GET /api/clients` respondieron correctamente en desarrollo.
+- Se migró la configuración de Prisma a `prisma.config.ts` para eliminar la advertencia deprecada del seed.
+- Se inició la migración de PostgreSQL a MongoDB, reemplazando el modelo de migraciones SQL por `db push` y una réplica local de Docker.
+- El build detectó que la fuente remota Geist no podía descargarse en el entorno; se sustituye por una pila tipográfica local para que la compilación sea reproducible sin red.
+- Se añadieron validaciones Zod para los ObjectId de rutas, evitando que identificadores MongoDB inválidos lleguen a Prisma.
+- Migración completada y verificada: MongoDB `rs0` saludable, `db push` y seed correctos; CRUD de cliente/evaluación probado contra la base local; lint, typecheck, 4 tests y build en verde.
+- El servidor de desarrollo está activo en `http://localhost:3000/clients` para revisar la UI.
+- Se inició la Fase 3: biblioteca de ejercicios. Se confirmó que el patrón existente de rutas, servicios, repositorios y Zod se puede reutilizar, y que las sustituciones se almacenarán como referencias MongoDB `ObjectId`.
+- Se creó la colección `Exercise` e índices asociados mediante `db push`, y el seed idempotente cargó siete ejercicios demo con sustituciones cruzadas. El primer typecheck reveló que las listas del seed quedaron inferidas como `readonly`; se corrige retirando esa inferencia para que Prisma reciba arreglos mutables.
+- La primera prueba de API detectó que un `PATCH` parcial podía materializar el valor por defecto de `secondaryMuscles`; el esquema de actualización se separó del de creación para que los campos omitidos permanezcan omitidos.
+- Fase 3 completada: se añadieron modelos/enums Prisma, seed de siete ejercicios, rutas `/api/exercises`, repositorio, servicio, validación Zod, tipos, etiquetas y la interfaz responsive de catálogo, detalle, creación y edición.
+- Verificación de API real: `GET /api/exercises` devuelve los siete ejercicios sembrados; POST, PATCH y DELETE funcionan; un borrado limpia una sustitución referenciada en otro documento dentro de la transacción. Los datos temporales de prueba se eliminaron.
+- Validación final de Fase 3: Prettier, ESLint, typecheck, Vitest (7 pruebas) y build de producción correctos. El primer build aislado falló por la restricción de puertos de Turbopack; el mismo build fuera del sandbox compiló sin errores.
+- Se inició la Fase 4. La decisión de diseño es almacenar rutinas como plantillas con versiones inmutables, estructuradas en días, bloques y prescripciones, y asignar clientes a una versión concreta.
+- El primer formateo de la Fase 4 detectó un delimitador incompleto en el repositorio al borrar bloques; se corrigió antes de ejecutar la comprobación de tipos.
+- La API real confirmó creación de rutina, versión y asignación a una versión concreta. Se corrigió la limpieza del programa actual del cliente al eliminar una rutina asignada.
+- Fase 4 completada: modelos Prisma de plantillas, versiones, días, bloques, prescripciones y asignaciones; seed con plantilla demo; Route Handlers, servicios, repositorios, validación Zod y UI responsive de biblioteca, constructor, detalle, versionado y asignación.
+- Validación final de Fase 4: `db:push`, seed, CRUD/versionado/asignación/borrado reales, Prettier, ESLint, typecheck, Vitest (9 pruebas) y build de producción correctos. El build aislado volvió a estar limitado por el puerto interno de Turbopack; el build fuera del sandbox fue exitoso.
+- Se inició la Fase 5. El diseño separará sesiones, ejercicios registrados y series registradas para preservar el historial real de la ejecución, independientemente de plantillas o futuras ediciones de rutinas.
+- Fase 5 completada: se añadieron los modelos MongoDB `WorkoutSession`, `WorkoutExercise` y `WorkoutSet`, índices, seed idempotente con una sesión demo y limpieza transaccional explícita al borrar sesiones o clientes.
+- Se implementaron rutas `/api/workouts` y `/api/workouts/:id`, validación Zod, repositorio, servicio, DTO y UI responsive para listado semanal, alta, detalle y edición de sesiones. Cada serie registra carga, repeticiones, duración, RIR, técnica, dolor y observaciones.
+- Verificación real: `GET /api/health` respondió 200; la sesión demo se listó para su semana; POST devolvió 201; PATCH y GET devolvieron 200; DELETE devolvió 204 y el GET posterior 404. La sesión de prueba se eliminó.
+- Validaciones de Fase 5: `db:generate`, `db:push`, seed, Prettier, ESLint, typecheck, Vitest (11 pruebas) y build de producción correctos. La aplicación se deja disponible en `/workouts`.
+- Se inició la Fase 6. Los check-ins semanales se modelarán de forma independiente de las evaluaciones físicas para registrar medidas, sueño, pasos, energía, hambre y adherencia nutricional, y exponer tendencias por cliente.
+- Fase 6 completada: se añadió el modelo MongoDB `CheckIn`, índices por cliente/fecha, seed idempotente de cinco semanas, limpieza explícita al borrar un cliente y las rutas `/api/check-ins` y `/api/check-ins/:id`.
+- La UI incluye navegación, formulario de check-in, listado filtrable, resumen de peso/sueño/adherencia/energía y gráficas Recharts responsivas de peso, sueño y adherencia por cliente.
+- Verificación real: la API listó las tendencias demo; POST devolvió 201; PATCH devolvió 200; DELETE devolvió 204 y la consulta posterior 404. Se eliminó el registro temporal. Prettier, ESLint, typecheck, Vitest (13 pruebas) y build de producción están correctos.
+- Se inició la Fase 7. El motor de progresión calculará PRs, volumen, e1RM, línea base, sugerencias de doble progresión y alertas directamente desde las sesiones completadas y sus series.
+- Fase 7 completada: se añadieron tres sesiones históricas idempotentes al seed para alimentar tendencias y un motor de progresión derivado sin nuevos modelos persistentes. La API `/api/progression?clientId=` retorna PRs, volumen, e1RM, línea base, sugerencias y alertas por ejercicio.
+- La UI de `/progression` incorpora selector de cliente, resumen, gráficas responsivas de e1RM/volumen y tarjetas de acciones. La fórmula Epley quedó cubierta por prueba unitaria.
+- Verificación real: Ligia devuelve dos PRs, +13.8% de e1RM promedio, alertas de estancamiento y dolor; un ObjectId inválido devuelve 400. Prettier, ESLint, typecheck, Vitest (14 pruebas) y build de producción están correctos.

@@ -1,0 +1,21 @@
+# Hallazgos
+
+- La referencia define un dashboard desktop refinado: sidebar blanca, header fino, tarjetas con borde suave, tipografía oscura, violeta intenso y tonos pastel para estados y métricas.
+- La base actual usa Prisma 6.19.2, MongoDB 7 en Docker como réplica `rs0`, Route Handlers y gestión real de clientes.
+- El modelo `Client` solo contiene nombre, estado, organización y coach; requiere campos de perfil y una entidad de evaluación para cumplir la Fase 2.
+- La interfaz debe mostrar datos reales a través de APIs, nunca importar Prisma en componentes React.
+- Se consultó la documentación actual de Prisma 6.19.2 y React Hook Form 7: se usarán relaciones Prisma normales, mutaciones anidadas o explícitas y `zodResolver` para los formularios del cliente.
+- Prisma MongoDB usa `ObjectId` para identificadores y no soporta Prisma Migrate; la sincronización se realiza con `prisma db push`. Las transacciones requieren una réplica, por lo que Docker usa una réplica local de un nodo.
+- Las fases 1 y 2 del roadmap están completadas. Fases posteriores continúan fuera de alcance.
+- Para la Fase 3, MongoDB permite una lista escalar `String[] @db.ObjectId` para referencias de sustitución. Se validarán como IDs opacos con Zod y se limpiarán explícitamente al eliminar un ejercicio.
+- La biblioteca se implementó con siete ejercicios demo. La API CRUD quedó verificada contra MongoDB, incluida la limpieza de una sustitución que apuntaba a un ejercicio eliminado.
+- Los esquemas de creación y actualización deben mantenerse separados cuando un campo de creación usa `default()`: así un `PATCH` no aplica accidentalmente valores por defecto a propiedades omitidas.
+- Para Fase 4, el modelo separará plantilla y versión. Las estructuras ordenadas de días, bloques y ejercicios se crearán transaccionalmente, y las asignaciones referenciarán una versión específica para preservar el plan prescrito.
+- La Fase 4 quedó implementada y comprobada: la plantilla demo contiene dos días; crear una versión no modifica la anterior; una asignación puede fijarse a una versión anterior; borrar una plantilla elimina explícitamente sus asignaciones, estructura y el programa actual del cliente cuando corresponde.
+- Para Fase 5, el registro de entrenamiento se modelará como sesión → ejercicio registrado → serie registrada. Las referencias a ejercicios permanecerán como `ObjectId` escalares y el DTO hidratará el nombre actual para no acoplar el historial a una relación mutable.
+- La Fase 5 está implementada: `WorkoutSession`, `WorkoutExercise` y `WorkoutSet` mantienen el historial de ejecución y se eliminan explícitamente en transacciones. El historial se filtra por cliente y semana, y calcula sesiones, completadas, series y volumen desde las series registradas.
+- Las APIs y pantallas de entrenamientos usan el mismo límite de responsabilidades que el resto del proyecto: Route Handler, Zod, servicio, repositorio y Prisma; los componentes cliente consumen únicamente las APIs HTTP.
+- Para la Fase 6 se usará un modelo de check-in independiente con relación `Client` y `Organization`, índice compuesto por cliente y fecha, y una gráfica Recharts con contenedor de altura explícita. Recharts 3 habilita la capa de accesibilidad de forma predeterminada.
+- La Fase 6 quedó implementada y comprobada: `CheckIn` conserva medidas, hábitos, escalas de bienestar y adherencia; la API retorna la serie cronológica y agregados para alimentar las gráficas. Las cinco semanas demo de Ligia permiten comprobar las tendencias de peso, sueño y adherencia.
+- Para la Fase 7, e1RM se calculará con la fórmula de Epley (`peso × (1 + repeticiones / 30)`) únicamente cuando una serie tenga carga y repeticiones. Los demás indicadores serán derivados de sesiones completadas, evitando una nueva fuente de verdad.
+- La Fase 7 quedó implementada sin añadir datos derivados a MongoDB. El endpoint reúne sesiones completadas por ejercicio, compara la última exposición con la primera, detecta ausencia de mejora en las tres exposiciones más recientes y busca dolor alto en las últimas dos semanas del historial. Las sugerencias de carga usan el incremento mínimo del catálogo de ejercicios.

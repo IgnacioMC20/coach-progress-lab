@@ -1,0 +1,364 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  OWNER
+  COACH
+}
+
+enum ClientStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
+
+enum TrainingLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum MeasurementType {
+  WEIGHT_REPS
+  BODYWEIGHT_REPS
+  DURATION
+  DISTANCE
+}
+
+enum EquipmentType {
+  BARBELL
+  DUMBBELL
+  KETTLEBELL
+  MACHINE
+  CABLE
+  BAND
+  BODYWEIGHT
+  OTHER
+}
+
+enum MuscleGroup {
+  CHEST
+  BACK
+  SHOULDERS
+  BICEPS
+  TRICEPS
+  QUADRICEPS
+  HAMSTRINGS
+  GLUTES
+  CALVES
+  CORE
+  FULL_BODY
+}
+
+enum MovementPattern {
+  SQUAT
+  HINGE
+  HORIZONTAL_PUSH
+  VERTICAL_PUSH
+  HORIZONTAL_PULL
+  VERTICAL_PULL
+  LUNGE
+  CARRY
+  ROTATION
+  ISOLATION
+}
+
+enum ProgressionPolicy {
+  DOUBLE_PROGRESSION
+  LOAD_FIRST
+  REPETITIONS_FIRST
+  RIR_BASED
+}
+
+enum RoutineStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum RoutineBlockType {
+  STRAIGHT_SET
+  SUPERSET
+  CIRCUIT
+}
+
+enum RoutineAssignmentStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+enum WorkoutSessionStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum TechniqueStatus {
+  GOOD
+  ADJUSTED
+  NEEDS_ATTENTION
+}
+
+model Organization {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  users     User[]
+  clients   Client[]
+  exercises Exercise[]
+  routines  RoutineTemplate[]
+  workouts  WorkoutSession[]
+  checkIns  CheckIn[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  email          String       @unique
+  name           String
+  role           UserRole     @default(COACH)
+  organizationId String       @db.ObjectId
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  clients        Client[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+model Client {
+  id             String             @id @default(auto()) @map("_id") @db.ObjectId
+  firstName      String
+  lastName       String
+  status         ClientStatus       @default(ACTIVE)
+  email          String?
+  phone          String?
+  birthDate      DateTime?
+  heightCm       Float?
+  primaryGoal    String?
+  trainingLevel  TrainingLevel?
+  currentProgram String?
+  currentWeek    Int?
+  notes          String?
+  organizationId String             @db.ObjectId
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  coachId        String?            @db.ObjectId
+  coach          User?              @relation(fields: [coachId], references: [id])
+  assessments    ClientAssessment[]
+  routineAssignments RoutineAssignment[]
+  workoutSessions    WorkoutSession[]
+  checkIns           CheckIn[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([organizationId])
+  @@index([coachId])
+  @@index([status])
+}
+
+model ClientAssessment {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  clientId          String   @db.ObjectId
+  client            Client   @relation(fields: [clientId], references: [id])
+  assessedAt        DateTime @default(now())
+  weightKg          Float?
+  bodyFatPercentage Float?
+  chestCm           Float?
+  waistCm           Float?
+  hipCm             Float?
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([clientId, assessedAt])
+}
+
+model Exercise {
+  id                String            @id @default(auto()) @map("_id") @db.ObjectId
+  name              String
+  description       String?
+  measurementType   MeasurementType
+  equipment         EquipmentType
+  primaryMuscles    MuscleGroup[]
+  secondaryMuscles  MuscleGroup[]     @default([])
+  movementPattern   MovementPattern
+  minimumIncrement  Float?
+  progressionPolicy ProgressionPolicy
+  substituteIds     String[]          @db.ObjectId
+  organizationId    String            @db.ObjectId
+  organization      Organization      @relation(fields: [organizationId], references: [id])
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@index([equipment])
+  @@index([movementPattern])
+}
+
+model RoutineTemplate {
+  id             String              @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  description    String?
+  status         RoutineStatus       @default(DRAFT)
+  organizationId String              @db.ObjectId
+  organization   Organization        @relation(fields: [organizationId], references: [id])
+  versions       RoutineVersion[]
+  assignments    RoutineAssignment[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model RoutineVersion {
+  id        String              @id @default(auto()) @map("_id") @db.ObjectId
+  routineId String              @db.ObjectId
+  routine   RoutineTemplate     @relation(fields: [routineId], references: [id])
+  version   Int
+  notes     String?
+  days      RoutineDay[]
+  assignments RoutineAssignment[]
+  createdAt DateTime            @default(now())
+
+  @@unique([routineId, version])
+  @@index([routineId])
+}
+
+model RoutineDay {
+  id        String         @id @default(auto()) @map("_id") @db.ObjectId
+  versionId String         @db.ObjectId
+  version   RoutineVersion @relation(fields: [versionId], references: [id])
+  name      String
+  position  Int
+  blocks    RoutineBlock[]
+
+  @@index([versionId, position])
+}
+
+model RoutineBlock {
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
+  dayId       String           @db.ObjectId
+  day         RoutineDay       @relation(fields: [dayId], references: [id])
+  name        String?
+  type        RoutineBlockType @default(STRAIGHT_SET)
+  position    Int
+  restSeconds Int?
+  exercises   RoutineExercise[]
+
+  @@index([dayId, position])
+}
+
+model RoutineExercise {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  blockId     String       @db.ObjectId
+  block       RoutineBlock @relation(fields: [blockId], references: [id])
+  exerciseId  String       @db.ObjectId
+  position    Int
+  sets        Int
+  repsMin     Int?
+  repsMax     Int?
+  rir         Float?
+  restSeconds Int?
+  notes       String?
+
+  @@index([blockId, position])
+  @@index([exerciseId])
+}
+
+model RoutineAssignment {
+  id               String                  @id @default(auto()) @map("_id") @db.ObjectId
+  clientId         String                  @db.ObjectId
+  client           Client                  @relation(fields: [clientId], references: [id])
+  routineId        String                  @db.ObjectId
+  routine          RoutineTemplate         @relation(fields: [routineId], references: [id])
+  routineVersionId String                  @db.ObjectId
+  routineVersion   RoutineVersion          @relation(fields: [routineVersionId], references: [id])
+  status           RoutineAssignmentStatus @default(ACTIVE)
+  startDate        DateTime                @default(now())
+  endDate          DateTime?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  @@index([clientId, status])
+  @@index([routineId])
+  @@index([routineVersionId])
+}
+
+model WorkoutSession {
+  id             String               @id @default(auto()) @map("_id") @db.ObjectId
+  clientId       String               @db.ObjectId
+  client         Client               @relation(fields: [clientId], references: [id])
+  organizationId String               @db.ObjectId
+  organization   Organization         @relation(fields: [organizationId], references: [id])
+  performedAt    DateTime             @default(now())
+  status         WorkoutSessionStatus @default(IN_PROGRESS)
+  notes          String?
+  exercises      WorkoutExercise[]
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@index([clientId, performedAt])
+  @@index([organizationId, performedAt])
+}
+
+model WorkoutExercise {
+  id        String         @id @default(auto()) @map("_id") @db.ObjectId
+  sessionId String         @db.ObjectId
+  session   WorkoutSession @relation(fields: [sessionId], references: [id])
+  exerciseId String        @db.ObjectId
+  position  Int
+  notes     String?
+  sets      WorkoutSet[]
+
+  @@index([sessionId, position])
+  @@index([exerciseId])
+}
+
+model WorkoutSet {
+  id                String          @id @default(auto()) @map("_id") @db.ObjectId
+  workoutExerciseId String          @db.ObjectId
+  workoutExercise   WorkoutExercise @relation(fields: [workoutExerciseId], references: [id])
+  position          Int
+  weightKg          Float?
+  reps              Int?
+  durationSeconds   Int?
+  rir               Float?
+  technique         TechniqueStatus?
+  painLevel         Int?
+  notes             String?
+
+  @@index([workoutExerciseId, position])
+}
+
+model CheckIn {
+  id                  String       @id @default(auto()) @map("_id") @db.ObjectId
+  clientId            String       @db.ObjectId
+  client              Client       @relation(fields: [clientId], references: [id])
+  organizationId      String       @db.ObjectId
+  organization        Organization @relation(fields: [organizationId], references: [id])
+  checkInDate         DateTime
+  weightKg            Float?
+  chestCm             Float?
+  waistCm             Float?
+  hipCm               Float?
+  sleepHours          Float?
+  steps               Int?
+  energyLevel         Int?
+  hungerLevel         Int?
+  nutritionAdherence  Int?
+  notes               String?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  @@index([clientId, checkInDate])
+  @@index([organizationId, checkInDate])
+}
