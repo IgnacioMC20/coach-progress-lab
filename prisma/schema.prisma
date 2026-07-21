@@ -95,6 +95,18 @@ enum RoutineAssignmentStatus {
   COMPLETED
 }
 
+enum CircuitStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CircuitAssignmentStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
 enum WorkoutSessionStatus {
   IN_PROGRESS
   COMPLETED
@@ -107,56 +119,60 @@ enum TechniqueStatus {
 }
 
 model Organization {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id        String            @id @default(auto()) @map("_id") @db.ObjectId
   name      String
   users     User[]
   clients   Client[]
   exercises Exercise[]
   routines  RoutineTemplate[]
+  circuits  CircuitTemplate[]
   workouts  WorkoutSession[]
   checkIns  CheckIn[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
 }
 
 model User {
-  id             String       @id @default(auto()) @map("_id") @db.ObjectId
-  email          String       @unique
-  name           String
-  role           UserRole     @default(COACH)
-  organizationId String       @db.ObjectId
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  clients        Client[]
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id                    String       @id @default(auto()) @map("_id") @db.ObjectId
+  email                 String       @unique
+  name                  String
+  role                  UserRole     @default(COACH)
+  organizationId        String       @db.ObjectId
+  organization          Organization @relation(fields: [organizationId], references: [id])
+  clients               Client[]
+  onboardingTourVersion Int          @default(0)
+  onboardingTourSeenAt  DateTime?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
 
   @@index([organizationId])
 }
 
 model Client {
-  id             String             @id @default(auto()) @map("_id") @db.ObjectId
-  firstName      String
-  lastName       String
-  status         ClientStatus       @default(ACTIVE)
-  email          String?
-  phone          String?
-  birthDate      DateTime?
-  heightCm       Float?
-  primaryGoal    String?
-  trainingLevel  TrainingLevel?
-  currentProgram String?
-  currentWeek    Int?
-  notes          String?
-  organizationId String             @db.ObjectId
-  organization   Organization       @relation(fields: [organizationId], references: [id])
-  coachId        String?            @db.ObjectId
-  coach          User?              @relation(fields: [coachId], references: [id])
-  assessments    ClientAssessment[]
+  id                 String              @id @default(auto()) @map("_id") @db.ObjectId
+  firstName          String
+  lastName           String
+  status             ClientStatus        @default(ACTIVE)
+  email              String?
+  phone              String?
+  birthDate          DateTime?
+  heightCm           Float?
+  primaryGoal        String?
+  trainingLevel      TrainingLevel?
+  currentProgram     String?
+  currentWeek        Int?
+  notes              String?
+  organizationId     String              @db.ObjectId
+  organization       Organization        @relation(fields: [organizationId], references: [id])
+  coachId            String?             @db.ObjectId
+  coach              User?               @relation(fields: [coachId], references: [id])
+  assessments        ClientAssessment[]
   routineAssignments RoutineAssignment[]
+  circuitAssignments CircuitAssignment[]
   workoutSessions    WorkoutSession[]
   checkIns           CheckIn[]
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 
   @@index([organizationId])
   @@index([coachId])
@@ -220,14 +236,14 @@ model RoutineTemplate {
 }
 
 model RoutineVersion {
-  id        String              @id @default(auto()) @map("_id") @db.ObjectId
-  routineId String              @db.ObjectId
-  routine   RoutineTemplate     @relation(fields: [routineId], references: [id])
-  version   Int
-  notes     String?
-  days      RoutineDay[]
+  id          String              @id @default(auto()) @map("_id") @db.ObjectId
+  routineId   String              @db.ObjectId
+  routine     RoutineTemplate     @relation(fields: [routineId], references: [id])
+  version     Int
+  notes       String?
+  days        RoutineDay[]
   assignments RoutineAssignment[]
-  createdAt DateTime            @default(now())
+  createdAt   DateTime            @default(now())
 
   @@unique([routineId, version])
   @@index([routineId])
@@ -245,11 +261,11 @@ model RoutineDay {
 }
 
 model RoutineBlock {
-  id          String           @id @default(auto()) @map("_id") @db.ObjectId
-  dayId       String           @db.ObjectId
-  day         RoutineDay       @relation(fields: [dayId], references: [id])
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  dayId       String            @db.ObjectId
+  day         RoutineDay        @relation(fields: [dayId], references: [id])
   name        String?
-  type        RoutineBlockType @default(STRAIGHT_SET)
+  type        RoutineBlockType  @default(STRAIGHT_SET)
   position    Int
   restSeconds Int?
   exercises   RoutineExercise[]
@@ -293,6 +309,72 @@ model RoutineAssignment {
   @@index([routineVersionId])
 }
 
+model CircuitTemplate {
+  id             String              @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  description    String?
+  status         CircuitStatus       @default(DRAFT)
+  organizationId String              @db.ObjectId
+  organization   Organization        @relation(fields: [organizationId], references: [id])
+  versions       CircuitVersion[]
+  assignments    CircuitAssignment[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model CircuitVersion {
+  id                       String              @id @default(auto()) @map("_id") @db.ObjectId
+  circuitId                String              @db.ObjectId
+  circuit                  CircuitTemplate     @relation(fields: [circuitId], references: [id])
+  version                  Int
+  rounds                   Int
+  restBetweenRoundsSeconds Int?
+  notes                    String?
+  exercises                CircuitExercise[]
+  assignments              CircuitAssignment[]
+  createdAt                DateTime            @default(now())
+
+  @@unique([circuitId, version])
+  @@index([circuitId])
+}
+
+model CircuitExercise {
+  id               String         @id @default(auto()) @map("_id") @db.ObjectId
+  circuitVersionId String         @db.ObjectId
+  circuitVersion   CircuitVersion @relation(fields: [circuitVersionId], references: [id])
+  exerciseId       String         @db.ObjectId
+  position         Int
+  reps             Int?
+  targetWeightKg   Float?
+  durationSeconds  Int?
+  notes            String?
+
+  @@index([circuitVersionId, position])
+  @@index([exerciseId])
+}
+
+model CircuitAssignment {
+  id               String                  @id @default(auto()) @map("_id") @db.ObjectId
+  clientId         String                  @db.ObjectId
+  client           Client                  @relation(fields: [clientId], references: [id])
+  circuitId        String                  @db.ObjectId
+  circuit          CircuitTemplate         @relation(fields: [circuitId], references: [id])
+  circuitVersionId String                  @db.ObjectId
+  circuitVersion   CircuitVersion          @relation(fields: [circuitVersionId], references: [id])
+  status           CircuitAssignmentStatus @default(ACTIVE)
+  startDate        DateTime                @default(now())
+  endDate          DateTime?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  @@index([clientId, status])
+  @@index([circuitId])
+  @@index([circuitVersionId])
+}
+
 model WorkoutSession {
   id             String               @id @default(auto()) @map("_id") @db.ObjectId
   clientId       String               @db.ObjectId
@@ -311,22 +393,22 @@ model WorkoutSession {
 }
 
 model WorkoutExercise {
-  id        String         @id @default(auto()) @map("_id") @db.ObjectId
-  sessionId String         @db.ObjectId
-  session   WorkoutSession @relation(fields: [sessionId], references: [id])
-  exerciseId String        @db.ObjectId
-  position  Int
-  notes     String?
-  sets      WorkoutSet[]
+  id         String         @id @default(auto()) @map("_id") @db.ObjectId
+  sessionId  String         @db.ObjectId
+  session    WorkoutSession @relation(fields: [sessionId], references: [id])
+  exerciseId String         @db.ObjectId
+  position   Int
+  notes      String?
+  sets       WorkoutSet[]
 
   @@index([sessionId, position])
   @@index([exerciseId])
 }
 
 model WorkoutSet {
-  id                String          @id @default(auto()) @map("_id") @db.ObjectId
-  workoutExerciseId String          @db.ObjectId
-  workoutExercise   WorkoutExercise @relation(fields: [workoutExerciseId], references: [id])
+  id                String           @id @default(auto()) @map("_id") @db.ObjectId
+  workoutExerciseId String           @db.ObjectId
+  workoutExercise   WorkoutExercise  @relation(fields: [workoutExerciseId], references: [id])
   position          Int
   weightKg          Float?
   reps              Int?
@@ -340,24 +422,24 @@ model WorkoutSet {
 }
 
 model CheckIn {
-  id                  String       @id @default(auto()) @map("_id") @db.ObjectId
-  clientId            String       @db.ObjectId
-  client              Client       @relation(fields: [clientId], references: [id])
-  organizationId      String       @db.ObjectId
-  organization        Organization @relation(fields: [organizationId], references: [id])
-  checkInDate         DateTime
-  weightKg            Float?
-  chestCm             Float?
-  waistCm             Float?
-  hipCm               Float?
-  sleepHours          Float?
-  steps               Int?
-  energyLevel         Int?
-  hungerLevel         Int?
-  nutritionAdherence  Int?
-  notes               String?
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
+  id                 String       @id @default(auto()) @map("_id") @db.ObjectId
+  clientId           String       @db.ObjectId
+  client             Client       @relation(fields: [clientId], references: [id])
+  organizationId     String       @db.ObjectId
+  organization       Organization @relation(fields: [organizationId], references: [id])
+  checkInDate        DateTime
+  weightKg           Float?
+  chestCm            Float?
+  waistCm            Float?
+  hipCm              Float?
+  sleepHours         Float?
+  steps              Int?
+  energyLevel        Int?
+  hungerLevel        Int?
+  nutritionAdherence Int?
+  notes              String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 
   @@index([clientId, checkInDate])
   @@index([organizationId, checkInDate])

@@ -8,10 +8,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { type Resolver, useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Activity,
   ArrowLeft,
   CalendarDays,
   ClipboardPlus,
+  Dumbbell,
   Pencil,
+  Pause,
+  PlayCircle,
   Ruler,
   Scale,
   Trash2,
@@ -20,14 +24,21 @@ import {
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TermTooltip } from "@/components/shared/term-tooltip";
-import { assessmentInputSchema } from "@/features/clients/schemas/client.schema";
+import { assessmentFormSchema } from "@/features/clients/schemas/client.schema";
+import { circuitAssignmentStatusLabel } from "@/features/circuits/circuit-labels";
+import { circuitApi } from "@/features/circuits/services/circuit-api";
 import {
   levelLabel,
   statusLabel,
   statusTone,
 } from "@/features/clients/client-labels";
 import { clientApi } from "@/features/clients/services/client-api";
-import type { ClientAssessment } from "@/features/clients/types/client";
+import type {
+  ClientAssessment,
+  ClientDetail,
+} from "@/features/clients/types/client";
+import { assignmentStatusLabel } from "@/features/routines/routine-labels";
+import { routineApi } from "@/features/routines/services/routine-api";
 import { cn } from "@/lib/utils";
 
 type AssessmentFormValues = {
@@ -72,7 +83,7 @@ function AssessmentForm({
   const queryClient = useQueryClient();
   const form = useForm<AssessmentFormValues>({
     resolver: zodResolver(
-      assessmentInputSchema,
+      assessmentFormSchema,
     ) as Resolver<AssessmentFormValues>,
     defaultValues: assessment
       ? {
@@ -161,6 +172,370 @@ function AssessmentForm({
         </p>
       )}
     </form>
+  );
+}
+
+function ClientProgramming({ client }: { client: ClientDetail }) {
+  const queryClient = useQueryClient();
+  const [routineId, setRoutineId] = useState("");
+  const [routineVersionId, setRoutineVersionId] = useState("");
+  const [circuitId, setCircuitId] = useState("");
+  const [circuitVersionId, setCircuitVersionId] = useState("");
+  const routines = useQuery({
+    queryKey: ["client-routine-options"],
+    queryFn: () => routineApi.list(new URLSearchParams({ limit: "50" })),
+  });
+  const circuits = useQuery({
+    queryKey: ["client-circuit-options"],
+    queryFn: () => circuitApi.list(new URLSearchParams({ limit: "50" })),
+  });
+  const selectedRoutine = useQuery({
+    queryKey: ["routine", routineId],
+    queryFn: () => routineApi.get(routineId),
+    enabled: Boolean(routineId),
+  });
+  const selectedCircuit = useQuery({
+    queryKey: ["circuit", circuitId],
+    queryFn: () => circuitApi.get(circuitId),
+    enabled: Boolean(circuitId),
+  });
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: ["client", client.id] });
+    void queryClient.invalidateQueries({ queryKey: ["clients"] });
+    void queryClient.invalidateQueries({ queryKey: ["routines"] });
+    void queryClient.invalidateQueries({ queryKey: ["circuits"] });
+  };
+  const assignRoutine = useMutation({
+    mutationFn: () =>
+      routineApi.assign(routineId, {
+        clientId: client.id,
+        routineVersionId:
+          routineVersionId || selectedRoutine.data?.currentVersion?.id,
+      }),
+    onSuccess: () => {
+      setRoutineId("");
+      setRoutineVersionId("");
+      refresh();
+    },
+  });
+  const assignCircuit = useMutation({
+    mutationFn: () =>
+      circuitApi.assign(circuitId, {
+        clientId: client.id,
+        circuitVersionId:
+          circuitVersionId || selectedCircuit.data?.currentVersion?.id,
+      }),
+    onSuccess: () => {
+      setCircuitId("");
+      setCircuitVersionId("");
+      refresh();
+    },
+  });
+  const updateRoutine = useMutation({
+    mutationFn: ({
+      id,
+      status,
+    }: {
+      id: string;
+      status: "PAUSED" | "COMPLETED";
+    }) => routineApi.updateAssignment(id, { status }),
+    onSuccess: refresh,
+  });
+  const updateCircuit = useMutation({
+    mutationFn: ({
+      id,
+      status,
+    }: {
+      id: string;
+      status: "PAUSED" | "COMPLETED";
+    }) => circuitApi.updateAssignment(id, { status }),
+    onSuccess: refresh,
+  });
+  const activeRoutines =
+    routines.data?.items.filter((item) => item.status !== "ARCHIVED") ?? [];
+  const activeCircuits =
+    circuits.data?.items.filter((item) => item.status !== "ARCHIVED") ?? [];
+  return (
+    <section
+      data-tour="client-programming"
+      className="mt-5 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_10px_30px_rgba(32,23,67,0.035)]"
+    >
+      <div>
+        <p className="text-primary text-xs font-bold tracking-[0.14em] uppercase">
+          Programación
+        </p>
+        <h2 className="mt-1 text-xl font-bold">
+          Rutinas y circuitos asignados
+        </h2>
+        <p className="mt-1 text-sm text-slate-500">
+          La rutina nueva finaliza la anterior. Los circuitos pueden acompañarla
+          de forma independiente.
+        </p>
+      </div>
+      <div className="mt-5 grid gap-4 lg:grid-cols-2">
+        <div className="border-purple/35 bg-lavender/15 rounded-xl border p-4">
+          <div className="text-primary flex items-center gap-2">
+            <Dumbbell size={18} />
+            <h3 className="font-bold">Asignar rutina</h3>
+          </div>
+          <div className="mt-4 grid gap-3">
+            <label className="grid gap-1 text-xs font-semibold text-slate-600">
+              Rutina
+              <select
+                value={routineId}
+                onChange={(event) => {
+                  setRoutineId(event.target.value);
+                  setRoutineVersionId("");
+                }}
+                className="h-10 rounded-lg border border-purple/40 bg-white px-3 text-sm"
+              >
+                <option value="">Seleccionar rutina</option>
+                {activeRoutines.map((routine) => (
+                  <option key={routine.id} value={routine.id}>
+                    {routine.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {routineId && (
+              <label className="grid gap-1 text-xs font-semibold text-slate-600">
+                Versión
+                <select
+                  value={
+                    routineVersionId ||
+                    selectedRoutine.data?.currentVersion?.id ||
+                    ""
+                  }
+                  onChange={(event) => setRoutineVersionId(event.target.value)}
+                  className="h-10 rounded-lg border border-purple/40 bg-white px-3 text-sm"
+                  disabled={selectedRoutine.isPending}
+                >
+                  {selectedRoutine.data?.versions.map((version) => (
+                    <option key={version.id} value={version.id}>
+                      Versión {version.version}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <Button
+              type="button"
+              onClick={() => assignRoutine.mutate()}
+              disabled={
+                !routineId ||
+                !selectedRoutine.data?.currentVersion ||
+                assignRoutine.isPending
+              }
+            >
+              <Dumbbell size={16} />{" "}
+              {assignRoutine.isPending ? "Asignando…" : "Asignar rutina"}
+            </Button>
+            {assignRoutine.error && (
+              <p role="alert" className="text-xs font-medium text-rose-600">
+                {assignRoutine.error.message}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="border-blue/45 bg-blue/15 rounded-xl border p-4">
+          <div className="text-primary flex items-center gap-2">
+            <Activity size={18} />
+            <h3 className="font-bold">Asignar circuito</h3>
+          </div>
+          <div className="mt-4 grid gap-3">
+            <label className="grid gap-1 text-xs font-semibold text-slate-600">
+              Circuito
+              <select
+                value={circuitId}
+                onChange={(event) => {
+                  setCircuitId(event.target.value);
+                  setCircuitVersionId("");
+                }}
+                className="h-10 rounded-lg border border-blue/45 bg-white px-3 text-sm"
+              >
+                <option value="">Seleccionar circuito</option>
+                {activeCircuits.map((circuit) => (
+                  <option key={circuit.id} value={circuit.id}>
+                    {circuit.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {circuitId && (
+              <label className="grid gap-1 text-xs font-semibold text-slate-600">
+                Versión
+                <select
+                  value={
+                    circuitVersionId ||
+                    selectedCircuit.data?.currentVersion?.id ||
+                    ""
+                  }
+                  onChange={(event) => setCircuitVersionId(event.target.value)}
+                  className="h-10 rounded-lg border border-blue/45 bg-white px-3 text-sm"
+                  disabled={selectedCircuit.isPending}
+                >
+                  {selectedCircuit.data?.versions.map((version) => (
+                    <option key={version.id} value={version.id}>
+                      Versión {version.version}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => assignCircuit.mutate()}
+              disabled={
+                !circuitId ||
+                !selectedCircuit.data?.currentVersion ||
+                assignCircuit.isPending
+              }
+            >
+              <Activity size={16} />{" "}
+              {assignCircuit.isPending ? "Asignando…" : "Asignar circuito"}
+            </Button>
+            {assignCircuit.error && (
+              <p role="alert" className="text-xs font-medium text-rose-600">
+                {assignCircuit.error.message}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        <AssignmentHistory
+          title="Historial de rutinas"
+          empty="Todavía no hay rutinas asignadas."
+          icon={<Dumbbell size={17} />}
+        >
+          {client.routineAssignments.map((assignment) => (
+            <AssignmentCard
+              key={assignment.id}
+              name={assignment.routineName}
+              version={assignment.version}
+              statusLabel={assignmentStatusLabel[assignment.status]}
+              status={assignment.status}
+              startDate={assignment.startDate}
+              onPause={() =>
+                updateRoutine.mutate({ id: assignment.id, status: "PAUSED" })
+              }
+              onComplete={() =>
+                updateRoutine.mutate({ id: assignment.id, status: "COMPLETED" })
+              }
+            />
+          ))}
+        </AssignmentHistory>
+        <AssignmentHistory
+          title="Historial de circuitos"
+          empty="Todavía no hay circuitos asignados."
+          icon={<Activity size={17} />}
+        >
+          {client.circuitAssignments.map((assignment) => (
+            <AssignmentCard
+              key={assignment.id}
+              name={assignment.circuitName}
+              version={assignment.version}
+              statusLabel={circuitAssignmentStatusLabel[assignment.status]}
+              status={assignment.status}
+              startDate={assignment.startDate}
+              onPause={() =>
+                updateCircuit.mutate({ id: assignment.id, status: "PAUSED" })
+              }
+              onComplete={() =>
+                updateCircuit.mutate({ id: assignment.id, status: "COMPLETED" })
+              }
+            />
+          ))}
+        </AssignmentHistory>
+      </div>
+    </section>
+  );
+}
+
+function AssignmentHistory({
+  title,
+  empty,
+  icon,
+  children,
+}: {
+  title: string;
+  empty: string;
+  icon: ReactNode;
+  children: ReactNode;
+}) {
+  const hasChildren = Array.isArray(children)
+    ? children.length > 0
+    : Boolean(children);
+  return (
+    <div className="rounded-xl border border-slate-100 bg-slate-50/55 p-4">
+      <div className="flex items-center gap-2 text-primary">
+        {icon}
+        <h3 className="font-bold">{title}</h3>
+      </div>
+      <div className="mt-3 space-y-2">
+        {hasChildren ? (
+          children
+        ) : (
+          <p className="py-3 text-sm text-slate-500">{empty}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AssignmentCard({
+  name,
+  version,
+  status,
+  statusLabel,
+  startDate,
+  onPause,
+  onComplete,
+}: {
+  name: string;
+  version: number;
+  status: "ACTIVE" | "PAUSED" | "COMPLETED";
+  statusLabel: string;
+  startDate: string;
+  onPause: () => void;
+  onComplete: () => void;
+}) {
+  return (
+    <div className="rounded-lg border border-white bg-white p-3">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-sm font-bold">{name}</p>
+          <p className="mt-0.5 text-xs text-slate-500">
+            v{version} · {statusLabel} ·{" "}
+            {new Intl.DateTimeFormat("es", {
+              day: "numeric",
+              month: "short",
+            }).format(new Date(startDate))}
+          </p>
+        </div>
+        {status === "ACTIVE" && (
+          <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={onPause}
+              className="rounded-md p-1.5 text-amber-600 hover:bg-amber-50"
+              aria-label={`Pausar ${name}`}
+            >
+              <Pause size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={onComplete}
+              className="rounded-md p-1.5 text-emerald-600 hover:bg-emerald-50"
+              aria-label={`Finalizar ${name}`}
+            >
+              <PlayCircle size={14} />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 export function ClientProfile() {
@@ -425,6 +800,7 @@ export function ClientProfile() {
           )}
         </aside>
       </div>
+      <ClientProgramming client={client} />
     </section>
   );
 }

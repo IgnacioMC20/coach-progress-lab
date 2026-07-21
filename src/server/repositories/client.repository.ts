@@ -1,13 +1,34 @@
 import "server-only";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/server/db/prisma";
-import type { ClientInput, ClientUpdate } from "@/features/clients/schemas/client.schema";
+import type {
+  ClientInput,
+  ClientUpdate,
+} from "@/features/clients/schemas/client.schema";
 
 const clientInclude = {
   assessments: { orderBy: { assessedAt: "desc" }, take: 1 },
   _count: { select: { assessments: true } },
 } satisfies Prisma.ClientInclude;
-export type ClientRecord = Prisma.ClientGetPayload<{ include: typeof clientInclude }>;
+export type ClientRecord = Prisma.ClientGetPayload<{
+  include: typeof clientInclude;
+}>;
+
+const clientDetailInclude = {
+  assessments: { orderBy: { assessedAt: "desc" } },
+  routineAssignments: {
+    orderBy: { createdAt: "desc" },
+    include: { routine: true, routineVersion: true },
+  },
+  circuitAssignments: {
+    orderBy: { createdAt: "desc" },
+    include: { circuit: true, circuitVersion: true },
+  },
+  _count: { select: { assessments: true } },
+} satisfies Prisma.ClientInclude;
+export type ClientDetailRecord = Prisma.ClientGetPayload<{
+  include: typeof clientDetailInclude;
+}>;
 
 export const clientRepository = {
   findMany: (where: Prisma.ClientWhereInput, skip: number, take: number) =>
@@ -22,10 +43,7 @@ export const clientRepository = {
   findById: (id: string) =>
     prisma.client.findUnique({
       where: { id },
-      include: {
-        assessments: { orderBy: { assessedAt: "desc" } },
-        _count: { select: { assessments: true } },
-      },
+      include: clientDetailInclude,
     }),
   findDefaultContext: async () => {
     const organization = await prisma.organization.findFirst({
@@ -38,8 +56,14 @@ export const clientRepository = {
     });
     return { organizationId: organization.id, coachId: coach?.id };
   },
-  create: (data: ClientInput, context: { organizationId: string; coachId?: string }) =>
-    prisma.client.create({ data: { ...data, ...context }, include: clientInclude }),
+  create: (
+    data: ClientInput,
+    context: { organizationId: string; coachId?: string },
+  ) =>
+    prisma.client.create({
+      data: { ...data, ...context },
+      include: clientInclude,
+    }),
   update: (id: string, data: ClientUpdate) =>
     prisma.client.update({ where: { id }, data, include: clientInclude }),
   delete: async (id: string) => {
@@ -54,9 +78,12 @@ export const clientRepository = {
     return prisma.$transaction([
       prisma.clientAssessment.deleteMany({ where: { clientId: id } }),
       prisma.routineAssignment.deleteMany({ where: { clientId: id } }),
+      prisma.circuitAssignment.deleteMany({ where: { clientId: id } }),
       prisma.checkIn.deleteMany({ where: { clientId: id } }),
       prisma.workoutSet.deleteMany({
-        where: { workoutExerciseId: { in: exercises.map((exercise) => exercise.id) } },
+        where: {
+          workoutExerciseId: { in: exercises.map((exercise) => exercise.id) },
+        },
       }),
       prisma.workoutExercise.deleteMany({
         where: { sessionId: { in: sessions.map((session) => session.id) } },
@@ -70,7 +97,9 @@ export const clientRepository = {
     data: Omit<Prisma.ClientAssessmentUncheckedCreateInput, "clientId">,
   ) => prisma.clientAssessment.create({ data: { ...data, clientId } }),
   findAssessment: (clientId: string, assessmentId: string) =>
-    prisma.clientAssessment.findFirst({ where: { id: assessmentId, clientId } }),
+    prisma.clientAssessment.findFirst({
+      where: { id: assessmentId, clientId },
+    }),
   updateAssessment: (
     assessmentId: string,
     data: Omit<Prisma.ClientAssessmentUncheckedUpdateInput, "clientId">,
