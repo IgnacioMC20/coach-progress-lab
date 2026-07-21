@@ -14,11 +14,13 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { OnboardingTour } from "@/features/onboarding/components/onboarding-tour";
 
 const items = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/clients", label: "Clientes", icon: Users },
   { href: "/routines", label: "Rutinas", icon: Dumbbell },
+  { href: "/circuits", label: "Circuitos", icon: Activity },
   { href: "/exercises", label: "Ejercicios", icon: Dumbbell },
   { href: "/workouts", label: "Entrenamientos", icon: Activity },
   { href: "/check-ins", label: "Check-ins", icon: ClipboardCheck },
@@ -68,10 +70,10 @@ export function DashboardLayout({
         </div>
         <div className="mt-auto flex items-center gap-3 border-t border-slate-100 pt-5">
           <div className="bg-lavender text-primary grid size-9 place-items-center rounded-full text-xs font-bold">
-            ML
+            CS
           </div>
           <div>
-            <p className="text-xs font-bold">María López</p>
+            <p className="text-xs font-bold">Cielo Sagastume</p>
             <p className="text-[11px] text-slate-500">Entrenadora</p>
           </div>
         </div>
@@ -91,6 +93,7 @@ export function DashboardLayout({
             Coach Progress Lab / Administración
           </div>
           <div className="ml-auto flex items-center gap-4">
+            <OnboardingTour />
             <button
               aria-label="Notificaciones"
               className="hover:text-primary relative text-slate-500"
@@ -99,7 +102,7 @@ export function DashboardLayout({
               <span className="absolute -top-1 -right-1 size-2 rounded-full bg-rose-500 ring-2 ring-white" />
             </button>
             <div className="from-lavender to-pink text-primary grid size-8 place-items-center rounded-full bg-gradient-to-br text-xs font-bold">
-              ML
+              CS
             </div>
           </div>
         </header>

@@ -142,7 +142,10 @@ export function WorkoutsLibrary() {
   end.setDate(end.getDate() + 6);
   return (
     <section className="mx-auto max-w-7xl">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+      <div
+        data-tour="workouts-overview"
+        className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"
+      >
         <div>
           <p className="text-primary mb-1 text-xs font-bold tracking-[0.18em] uppercase">
             Registro de ejecución
@@ -187,7 +190,10 @@ export function WorkoutsLibrary() {
           </Link>
         </div>
       </div>
-      <div className="mt-7 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-[0_8px_24px_rgba(32,23,67,0.035)]">
+      <div
+        data-tour="workouts-history"
+        className="mt-7 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-[0_8px_24px_rgba(32,23,67,0.035)]"
+      >
         <div className="flex items-center gap-2">
           <button
             type="button"

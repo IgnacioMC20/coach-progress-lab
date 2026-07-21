@@ -24,3 +24,101 @@ body {
 html {
   overflow-x: clip;
 }
+
+.cpl-tour-popover.driver-popover {
+  width: min(22rem, calc(100vw - 2rem));
+  max-width: none;
+  padding: 1.25rem;
+  border: 1px solid rgb(200 182 255 / 0.7);
+  border-radius: 1.25rem;
+  background: #ffffff;
+  color: #111827;
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  box-shadow: 0 24px 64px rgb(32 23 67 / 0.22);
+}
+.cpl-tour-popover .driver-popover-title {
+  padding-right: 1.5rem;
+  font-size: 1.125rem;
+  line-height: 1.35;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+.cpl-tour-kicker {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: #5b4bb7;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.cpl-tour-popover .driver-popover-description {
+  margin-top: 0.5rem;
+  color: #64748b;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+.cpl-tour-popover .driver-popover-close-btn {
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  color: #64748b;
+  font-size: 1.4rem;
+  line-height: 1;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+.cpl-tour-popover .driver-popover-close-btn:hover,
+.cpl-tour-popover .driver-popover-close-btn:focus-visible {
+  background: rgb(231 198 255 / 0.45);
+  color: #5b4bb7;
+}
+.cpl-tour-popover .driver-popover-footer {
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+.cpl-tour-popover .driver-popover-progress-text {
+  color: #8b7aa8;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.cpl-tour-popover .driver-popover-footer button {
+  min-height: 2.25rem;
+  border: 1px solid rgb(200 182 255 / 0.8);
+  border-radius: 0.625rem;
+  background: #ffffff;
+  color: #5b4bb7;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-shadow: none;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+.cpl-tour-popover .driver-popover-footer button:hover,
+.cpl-tour-popover .driver-popover-footer button:focus-visible {
+  border-color: #5b4bb7;
+  background: rgb(231 198 255 / 0.35);
+  color: #4c3da2;
+}
+.cpl-tour-popover .driver-popover-footer .driver-popover-next-btn {
+  border-color: #5b4bb7;
+  background: #5b4bb7;
+  color: #ffffff;
+}
+.cpl-tour-popover .driver-popover-footer .driver-popover-next-btn:hover,
+.cpl-tour-popover
+  .driver-popover-footer
+  .driver-popover-next-btn:focus-visible {
+  background: #4c3da2;
+  color: #ffffff;
+}
+.cpl-tour-popover button:focus-visible {
+  outline: 2px solid rgb(91 75 183 / 0.35);
+  outline-offset: 2px;
+}
