@@ -201,7 +201,7 @@ export function RoutineBuilder({ routine }: { routine?: RoutineDetail }) {
     });
   const isVersion = Boolean(routine);
   return (
-    <section className="mx-auto max-w-6xl">
+    <section data-tour="routine-builder" className="mx-auto max-w-6xl">
       <Link
         href={routine ? `/routines/${routine.id}` : "/routines"}
         className="hover:text-primary inline-flex items-center gap-2 text-sm font-semibold text-slate-500"
@@ -280,14 +280,17 @@ export function RoutineBuilder({ routine }: { routine?: RoutineDetail }) {
                 <span className="bg-primary grid size-7 place-items-center rounded-lg text-xs font-bold text-white">
                   {dayIndex + 1}
                 </span>
-                <Input
-                  value={day.name}
-                  onChange={(event) =>
-                    updateDay(dayIndex, { name: event.target.value })
-                  }
-                  className="h-9 max-w-xs border-slate-200 font-bold"
-                  placeholder="Nombre del día"
-                />
+                <label className="grid gap-1 text-xs font-semibold text-slate-600">
+                  Nombre del día
+                  <Input
+                    value={day.name}
+                    onChange={(event) =>
+                      updateDay(dayIndex, { name: event.target.value })
+                    }
+                    className="h-9 max-w-xs border-slate-200 font-bold"
+                    placeholder="Ej. Tren inferior"
+                  />
+                </label>
                 <span className="text-xs font-medium text-slate-500">
                   {day.blocks.length} bloque{day.blocks.length === 1 ? "" : "s"}
                 </span>
@@ -312,56 +315,64 @@ export function RoutineBuilder({ routine }: { routine?: RoutineDetail }) {
                     className="border-purple/35 bg-lavender/15 rounded-xl border p-4"
                   >
                     <div className="flex flex-wrap items-center gap-3">
-                      <label className="relative">
-                        <select
-                          value={block.type}
+                      <label className="grid gap-1 text-xs font-semibold text-slate-600">
+                        Tipo de bloque
+                        <span className="relative">
+                          <select
+                            value={block.type}
+                            onChange={(event) =>
+                              updateBlock(dayIndex, blockIndex, {
+                                type: event.target.value as RoutineBlockType,
+                              })
+                            }
+                            className="border-purple/50 h-9 appearance-none rounded-lg border bg-white py-0 pr-9 pl-3 text-xs font-bold text-slate-700"
+                          >
+                            <option value="STRAIGHT_SET">
+                              {blockTypeLabel.STRAIGHT_SET}
+                            </option>
+                            <option value="SUPERSET">
+                              {blockTypeLabel.SUPERSET}
+                            </option>
+                            <option value="CIRCUIT">
+                              {blockTypeLabel.CIRCUIT}
+                            </option>
+                          </select>
+                          <ChevronDown
+                            className="pointer-events-none absolute top-2 right-2 text-slate-400"
+                            size={15}
+                          />
+                        </span>
+                      </label>
+                      <label className="grid gap-1 text-xs font-semibold text-slate-600">
+                        Nombre del bloque
+                        <Input
+                          value={block.name ?? ""}
                           onChange={(event) =>
                             updateBlock(dayIndex, blockIndex, {
-                              type: event.target.value as RoutineBlockType,
+                              name: event.target.value,
                             })
                           }
-                          className="border-purple/50 h-9 appearance-none rounded-lg border bg-white py-0 pr-9 pl-3 text-xs font-bold text-slate-700"
-                        >
-                          <option value="STRAIGHT_SET">
-                            {blockTypeLabel.STRAIGHT_SET}
-                          </option>
-                          <option value="SUPERSET">
-                            {blockTypeLabel.SUPERSET}
-                          </option>
-                          <option value="CIRCUIT">
-                            {blockTypeLabel.CIRCUIT}
-                          </option>
-                        </select>
-                        <ChevronDown
-                          className="pointer-events-none absolute top-2 right-2 text-slate-400"
-                          size={15}
+                          className="border-purple/40 h-9 max-w-60"
+                          placeholder="Opcional"
                         />
                       </label>
-                      <Input
-                        value={block.name ?? ""}
-                        onChange={(event) =>
-                          updateBlock(dayIndex, blockIndex, {
-                            name: event.target.value,
-                          })
-                        }
-                        className="border-purple/40 h-9 max-w-60"
-                        placeholder="Nombre opcional del bloque"
-                      />
-                      <Input
-                        value={block.restSeconds ?? ""}
-                        onChange={(event) =>
-                          updateBlock(dayIndex, blockIndex, {
-                            restSeconds:
-                              event.target.value === ""
-                                ? undefined
-                                : Number(event.target.value),
-                          })
-                        }
-                        className="border-purple/40 h-9 w-30"
-                        type="number"
-                        min="0"
-                        placeholder="Descanso s"
-                      />
+                      <label className="grid gap-1 text-xs font-semibold text-slate-600">
+                        Descanso (segundos)
+                        <Input
+                          value={block.restSeconds ?? ""}
+                          onChange={(event) =>
+                            updateBlock(dayIndex, blockIndex, {
+                              restSeconds:
+                                event.target.value === ""
+                                  ? undefined
+                                  : Number(event.target.value),
+                            })
+                          }
+                          className="border-purple/40 h-9 w-30"
+                          type="number"
+                          min="0"
+                        />
+                      </label>
                       <button
                         type="button"
                         onClick={() =>
@@ -384,108 +395,121 @@ export function RoutineBuilder({ routine }: { routine?: RoutineDetail }) {
                           key={`${dayIndex}-${blockIndex}-${entryIndex}`}
                           className="grid gap-2 rounded-lg border border-white bg-white/85 p-3 md:grid-cols-[minmax(12rem,1fr)_4.5rem_5rem_5rem_4.5rem_4.5rem_auto]"
                         >
-                          <select
-                            value={entry.exerciseId}
-                            onChange={(event) =>
-                              updateEntry(dayIndex, blockIndex, entryIndex, {
-                                exerciseId: event.target.value,
-                              })
-                            }
-                            className="focus:border-primary h-9 min-w-0 rounded-lg border border-slate-200 bg-white px-2 text-sm font-semibold outline-none"
-                          >
-                            <option value="">
-                              {exercises.isPending
-                                ? "Cargando ejercicios…"
-                                : "Selecciona ejercicio"}
-                            </option>
-                            {exercises.data?.items.map((exercise) => (
-                              <option key={exercise.id} value={exercise.id}>
-                                {exercise.name}
-                              </option>
-                            ))}
-                          </select>
-                          <Input
-                            value={entry.sets}
-                            onChange={(event) =>
-                              updateEntry(dayIndex, blockIndex, entryIndex, {
-                                sets: Number(event.target.value),
-                              })
-                            }
-                            className="h-9 border-slate-200"
-                            type="number"
-                            min="1"
-                            aria-label="Series"
-                            placeholder="Series"
-                          />
-                          <Input
-                            value={entry.repsMin ?? ""}
-                            onChange={(event) =>
-                              updateEntry(dayIndex, blockIndex, entryIndex, {
-                                repsMin:
-                                  event.target.value === ""
-                                    ? undefined
-                                    : Number(event.target.value),
-                              })
-                            }
-                            className="h-9 border-slate-200"
-                            type="number"
-                            min="1"
-                            aria-label="Repeticiones mínimas"
-                            placeholder="Reps min"
-                          />
-                          <Input
-                            value={entry.repsMax ?? ""}
-                            onChange={(event) =>
-                              updateEntry(dayIndex, blockIndex, entryIndex, {
-                                repsMax:
-                                  event.target.value === ""
-                                    ? undefined
-                                    : Number(event.target.value),
-                              })
-                            }
-                            className="h-9 border-slate-200"
-                            type="number"
-                            min="1"
-                            aria-label="Repeticiones máximas"
-                            placeholder="Reps max"
-                          />
-                          <div className="flex min-w-0 items-center gap-1">
-                            <Input
-                              value={entry.rir ?? ""}
+                          <label className="grid gap-1 text-xs font-semibold text-slate-600">
+                            Ejercicio
+                            <select
+                              value={entry.exerciseId}
                               onChange={(event) =>
                                 updateEntry(dayIndex, blockIndex, entryIndex, {
-                                  rir:
+                                  exerciseId: event.target.value,
+                                })
+                              }
+                              className="focus:border-primary h-9 min-w-0 rounded-lg border border-slate-200 bg-white px-2 text-sm font-semibold outline-none"
+                            >
+                              <option value="">
+                                {exercises.isPending
+                                  ? "Cargando ejercicios…"
+                                  : "Selecciona ejercicio"}
+                              </option>
+                              {exercises.data?.items.map((exercise) => (
+                                <option key={exercise.id} value={exercise.id}>
+                                  {exercise.name}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="grid gap-1 text-xs font-semibold text-slate-600">
+                            Series
+                            <Input
+                              value={entry.sets}
+                              onChange={(event) =>
+                                updateEntry(dayIndex, blockIndex, entryIndex, {
+                                  sets: Number(event.target.value),
+                                })
+                              }
+                              className="h-9 border-slate-200"
+                              type="number"
+                              min="1"
+                            />
+                          </label>
+                          <label className="grid gap-1 text-xs font-semibold text-slate-600">
+                            Repeticiones mínimas
+                            <Input
+                              value={entry.repsMin ?? ""}
+                              onChange={(event) =>
+                                updateEntry(dayIndex, blockIndex, entryIndex, {
+                                  repsMin:
                                     event.target.value === ""
                                       ? undefined
                                       : Number(event.target.value),
                                 })
                               }
-                              className="h-9 min-w-0 w-auto flex-1 border-slate-200"
+                              className="h-9 border-slate-200"
+                              type="number"
+                              min="1"
+                            />
+                          </label>
+                          <label className="grid gap-1 text-xs font-semibold text-slate-600">
+                            Repeticiones máximas
+                            <Input
+                              value={entry.repsMax ?? ""}
+                              onChange={(event) =>
+                                updateEntry(dayIndex, blockIndex, entryIndex, {
+                                  repsMax:
+                                    event.target.value === ""
+                                      ? undefined
+                                      : Number(event.target.value),
+                                })
+                              }
+                              className="h-9 border-slate-200"
+                              type="number"
+                              min="1"
+                            />
+                          </label>
+                          <label className="grid gap-1 text-xs font-semibold text-slate-600">
+                            RIR
+                            <div className="flex min-w-0 items-center gap-1">
+                              <Input
+                                value={entry.rir ?? ""}
+                                onChange={(event) =>
+                                  updateEntry(
+                                    dayIndex,
+                                    blockIndex,
+                                    entryIndex,
+                                    {
+                                      rir:
+                                        event.target.value === ""
+                                          ? undefined
+                                          : Number(event.target.value),
+                                    },
+                                  )
+                                }
+                                className="h-9 min-w-0 w-auto flex-1 border-slate-200"
+                                type="number"
+                                min="0"
+                                max="5"
+                                step="0.5"
+                              />
+                              <TermTooltip term="RIR" />
+                            </div>
+                          </label>
+                          <label className="grid gap-1 text-xs font-semibold text-slate-600">
+                            Descanso (segundos)
+                            <Input
+                              value={entry.restSeconds ?? ""}
+                              onChange={(event) =>
+                                updateEntry(dayIndex, blockIndex, entryIndex, {
+                                  restSeconds:
+                                    event.target.value === ""
+                                      ? undefined
+                                      : Number(event.target.value),
+                                })
+                              }
+                              className="h-9 border-slate-200"
                               type="number"
                               min="0"
-                              max="5"
-                              step="0.5"
-                              aria-label="RIR, repeticiones en reserva"
-                              placeholder="RIR"
                             />
-                            <TermTooltip term="RIR" />
-                          </div>
-                          <Input
-                            value={entry.restSeconds ?? ""}
-                            onChange={(event) =>
-                              updateEntry(dayIndex, blockIndex, entryIndex, {
-                                restSeconds:
-                                  event.target.value === ""
-                                    ? undefined
-                                    : Number(event.target.value),
-                              })
-                            }
-                            className="h-9 border-slate-200"
-                            type="number"
-                            min="0"
-                            aria-label="Descanso"
-                            placeholder="Descanso"
-                          />
+                          </label>
                           <button
                             type="button"
                             onClick={() =>

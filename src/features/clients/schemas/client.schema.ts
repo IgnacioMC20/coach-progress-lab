@@ -1,10 +1,19 @@
 import { z } from "zod";
 
-export const clientStatusSchema = z.enum(["ACTIVE", "PAUSED", "COMPLETED", "ARCHIVED"]);
+export const clientStatusSchema = z.enum([
+  "ACTIVE",
+  "PAUSED",
+  "COMPLETED",
+  "ARCHIVED",
+]);
 export const objectIdSchema = z
   .string()
   .regex(/^[a-f\d]{24}$/i, "Invalid MongoDB ObjectId");
-export const trainingLevelSchema = z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"]);
+export const trainingLevelSchema = z.enum([
+  "BEGINNER",
+  "INTERMEDIATE",
+  "ADVANCED",
+]);
 const optionalText = z
   .string()
   .trim()
@@ -30,7 +39,9 @@ export const clientInputSchema = z.object({
     .date()
     .optional()
     .or(z.literal(""))
-    .transform((value) => (value ? new Date(`${value}T12:00:00.000Z`) : undefined)),
+    .transform((value) =>
+      value ? new Date(`${value}T12:00:00.000Z`) : undefined,
+    ),
   heightCm: optionalNumber.refine(
     (value) => value === undefined || (value >= 80 && value <= 250),
     "La estatura debe estar entre 80 y 250 cm",
@@ -40,7 +51,8 @@ export const clientInputSchema = z.object({
   currentProgram: optionalText,
   currentWeek: optionalNumber.refine(
     (value) =>
-      value === undefined || (Number.isInteger(value) && value >= 1 && value <= 104),
+      value === undefined ||
+      (Number.isInteger(value) && value >= 1 && value <= 104),
     "La semana debe estar entre 1 y 104",
   ),
   notes: z
@@ -58,12 +70,8 @@ export const listClientsQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().min(1).max(50).default(12),
 });
-export const assessmentInputSchema = z.object({
-  assessedAt: z
-    .string()
-    .date()
-    .optional()
-    .transform((value) => (value ? new Date(`${value}T12:00:00.000Z`) : undefined)),
+export const assessmentFormSchema = z.object({
+  assessedAt: z.string().date().optional(),
   weightKg: optionalNumber.refine(
     (value) => value === undefined || (value >= 20 && value <= 400),
     "El peso debe estar entre 20 y 400 kg",
@@ -81,6 +89,16 @@ export const assessmentInputSchema = z.object({
     .max(2_000)
     .optional()
     .transform((value) => value || undefined),
+});
+
+export const assessmentInputSchema = assessmentFormSchema.extend({
+  assessedAt: z
+    .string()
+    .date()
+    .optional()
+    .transform((value) =>
+      value ? new Date(`${value}T12:00:00.000Z`) : undefined,
+    ),
 });
 
 export type ClientInput = z.infer<typeof clientInputSchema>;
