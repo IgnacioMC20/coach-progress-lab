@@ -163,12 +163,12 @@ async function main() {
   const coach = await prisma.user.upsert({
     where: { email: "coach@coachprogress.local" },
     update: {
-      name: "María López",
+      name: "Cielo Sagastume",
       role: UserRole.OWNER,
       organizationId: organization.id,
     },
     create: {
-      name: "María López",
+      name: "Cielo Sagastume",
       email: "coach@coachprogress.local",
       role: UserRole.OWNER,
       organizationId: organization.id,
