@@ -140,7 +140,10 @@ export function ClientsSelector() {
   });
   return (
     <section className="mx-auto max-w-7xl">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+      <div
+        data-tour="clients-overview"
+        className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"
+      >
         <div>
           <p className="text-primary mb-1 text-xs font-bold tracking-[0.18em] uppercase">
             Gestión de clientes

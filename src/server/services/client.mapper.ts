@@ -2,15 +2,21 @@ import "server-only";
 import type {
   ClientAssessment,
   Client as ClientDto,
+  ClientCircuitAssignment,
+  ClientRoutineAssignment,
 } from "@/features/clients/types/client";
-import type { ClientRecord } from "@/server/repositories/client.repository";
+import type {
+  ClientDetailRecord,
+  ClientRecord,
+} from "@/server/repositories/client.repository";
 
 function calculateAge(birthDate: Date | null) {
   if (!birthDate) return null;
   const today = new Date();
   let age = today.getUTCFullYear() - birthDate.getUTCFullYear();
   const month = today.getUTCMonth() - birthDate.getUTCMonth();
-  if (month < 0 || (month === 0 && today.getUTCDate() < birthDate.getUTCDate())) age -= 1;
+  if (month < 0 || (month === 0 && today.getUTCDate() < birthDate.getUTCDate()))
+    age -= 1;
   return age;
 }
 function assessmentDto(assessment: {
@@ -54,7 +60,7 @@ export function toClientDto(client: ClientRecord): ClientDto {
     assessmentCount: client._count.assessments,
   };
 }
-export function toClientDetailDto(client: ClientRecord | null) {
+export function toClientDetailDto(client: ClientDetailRecord | null) {
   if (!client) return null;
   const latest = client.assessments[0] ?? null;
   const bmi =
@@ -64,6 +70,28 @@ export function toClientDetailDto(client: ClientRecord | null) {
   return {
     ...toClientDto({ ...client, assessments: latest ? [latest] : [] }),
     assessments: client.assessments.map(assessmentDto),
+    routineAssignments: client.routineAssignments.map<ClientRoutineAssignment>(
+      (assignment) => ({
+        id: assignment.id,
+        routineId: assignment.routineId,
+        routineName: assignment.routine.name,
+        version: assignment.routineVersion.version,
+        status: assignment.status,
+        startDate: assignment.startDate.toISOString(),
+        endDate: assignment.endDate?.toISOString() ?? null,
+      }),
+    ),
+    circuitAssignments: client.circuitAssignments.map<ClientCircuitAssignment>(
+      (assignment) => ({
+        id: assignment.id,
+        circuitId: assignment.circuitId,
+        circuitName: assignment.circuit.name,
+        version: assignment.circuitVersion.version,
+        status: assignment.status,
+        startDate: assignment.startDate.toISOString(),
+        endDate: assignment.endDate?.toISOString() ?? null,
+      }),
+    ),
     bmi,
   };
 }

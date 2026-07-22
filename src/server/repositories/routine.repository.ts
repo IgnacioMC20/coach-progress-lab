@@ -48,7 +48,11 @@ export type RoutineListRecord = Prisma.RoutineTemplateGetPayload<{
   include: typeof routineListInclude;
 }>;
 
-function versionData(input: RoutineVersionInput, routineId: string, version: number) {
+function versionData(
+  input: RoutineVersionInput,
+  routineId: string,
+  version: number,
+) {
   return {
     routineId,
     version,
@@ -79,7 +83,11 @@ function versionData(input: RoutineVersionInput, routineId: string, version: num
 export const routineRepository = {
   findDefaultOrganization: () =>
     prisma.organization.findFirst({ orderBy: { createdAt: "asc" } }),
-  findMany: (where: Prisma.RoutineTemplateWhereInput, skip: number, take: number) =>
+  findMany: (
+    where: Prisma.RoutineTemplateWhereInput,
+    skip: number,
+    take: number,
+  ) =>
     prisma.routineTemplate.findMany({
       where,
       skip,
@@ -92,10 +100,14 @@ export const routineRepository = {
   countAssignments: (organizationId: string) =>
     prisma.routineAssignment.count({ where: { routine: { organizationId } } }),
   findById: (id: string) =>
-    prisma.routineTemplate.findUnique({ where: { id }, include: routineDetailInclude }),
+    prisma.routineTemplate.findUnique({
+      where: { id },
+      include: routineDetailInclude,
+    }),
   findVersion: (routineId: string, versionId: string) =>
     prisma.routineVersion.findFirst({ where: { id: versionId, routineId } }),
-  findAssignment: (id: string) => prisma.routineAssignment.findUnique({ where: { id } }),
+  findAssignment: (id: string) =>
+    prisma.routineAssignment.findUnique({ where: { id } }),
   findExercises: (ids: string[], organizationId: string) =>
     prisma.exercise.findMany({
       where: { id: { in: ids }, organizationId },
@@ -134,6 +146,11 @@ export const routineRepository = {
     }),
   assign: async (routineId: string, input: RoutineAssignmentInput) =>
     prisma.$transaction(async (tx) => {
+      const completedAt = new Date();
+      await tx.routineAssignment.updateMany({
+        where: { clientId: input.clientId, status: "ACTIVE" },
+        data: { status: "COMPLETED", endDate: completedAt },
+      });
       const assignment = await tx.routineAssignment.create({
         data: { ...input, routineId },
         include: { client: true, routineVersion: true },
@@ -152,7 +169,9 @@ export const routineRepository = {
       where: { id },
       data: {
         ...input,
-        endDate: input.endDate ?? (input.status === "COMPLETED" ? new Date() : undefined),
+        endDate:
+          input.endDate ??
+          (input.status === "COMPLETED" ? new Date() : undefined),
       },
       include: { client: true, routineVersion: true },
     }),
@@ -192,7 +211,9 @@ export const routineRepository = {
         where: { blockId: { in: blocks.map((block) => block.id) } },
       }),
       prisma.routineBlock.deleteMany({ where: { dayId: { in: dayIds } } }),
-      prisma.routineDay.deleteMany({ where: { versionId: { in: versionIds } } }),
+      prisma.routineDay.deleteMany({
+        where: { versionId: { in: versionIds } },
+      }),
       prisma.routineVersion.deleteMany({ where: { routineId: id } }),
       prisma.routineTemplate.delete({ where: { id } }),
     ]);

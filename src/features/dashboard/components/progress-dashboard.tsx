@@ -67,7 +67,10 @@ export function ProgressDashboard() {
 
   if (dashboard.isPending)
     return (
-      <div className="mx-auto grid max-w-7xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div
+        data-tour="dashboard-overview"
+        className="mx-auto grid max-w-7xl gap-4 sm:grid-cols-2 lg:grid-cols-4"
+      >
         {Array.from({ length: 4 }, (_, index) => (
           <div
             key={index}
@@ -78,23 +81,30 @@ export function ProgressDashboard() {
     );
   if (dashboard.isError || !dashboard.data)
     return (
-      <EmptyState
-        title="No pudimos cargar el panorama"
-        description="Actualiza la página e inténtalo nuevamente."
-      />
+      <div data-tour="dashboard-overview">
+        <EmptyState
+          title="No pudimos cargar el panorama"
+          description="Actualiza la página e inténtalo nuevamente."
+        />
+      </div>
     );
   const data = dashboard.data;
   if (!data.summary.activeClients)
     return (
-      <EmptyState
-        title="Aún no hay clientes activos"
-        description="Crea o reactiva un cliente para empezar a seguir su progreso."
-      />
+      <div data-tour="dashboard-overview">
+        <EmptyState
+          title="Aún no hay clientes activos"
+          description="Crea o reactiva un cliente para empezar a seguir su progreso."
+        />
+      </div>
     );
 
   return (
     <section className="mx-auto max-w-7xl">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div
+        data-tour="dashboard-overview"
+        className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
+      >
         <div>
           <p className="text-primary mb-1 text-xs font-bold tracking-[0.18em] uppercase">
             Cartera de coaching

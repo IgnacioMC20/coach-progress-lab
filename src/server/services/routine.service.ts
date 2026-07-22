@@ -23,7 +23,9 @@ const notFound = () => new ApiError("NOT_FOUND", "Routine not found", 404);
 
 function exerciseIds(input: Pick<RoutineVersionInput, "days">) {
   return input.days.flatMap((day) =>
-    day.blocks.flatMap((block) => block.exercises.map((exercise) => exercise.exerciseId)),
+    day.blocks.flatMap((block) =>
+      block.exercises.map((exercise) => exercise.exerciseId),
+    ),
   );
 }
 
@@ -45,7 +47,11 @@ export const routineService = {
       ...(input.q ? { name: { contains: input.q, mode: "insensitive" } } : {}),
     };
     const [routines, total, draft, published, assignments] = await Promise.all([
-      routineRepository.findMany(where, (input.page - 1) * input.limit, input.limit),
+      routineRepository.findMany(
+        where,
+        (input.page - 1) * input.limit,
+        input.limit,
+      ),
       routineRepository.count(where),
       routineRepository.count({ ...where, status: "DRAFT" }),
       routineRepository.count({ ...where, status: "PUBLISHED" }),
@@ -84,7 +90,10 @@ export const routineService = {
     organizationId: string,
   ) {
     const ids = [...new Set(exerciseIds(input))];
-    const exercises = await routineRepository.findExercises(ids, organizationId);
+    const exercises = await routineRepository.findExercises(
+      ids,
+      organizationId,
+    );
     if (exercises.length !== ids.length)
       throw new ApiError(
         "VALIDATION_ERROR",
@@ -119,13 +128,23 @@ export const routineService = {
   async assign(id: string, input: RoutineAssignmentInput) {
     const routine = await routineRepository.findById(id);
     if (!routine) throw notFound();
+    if (routine.status === "ARCHIVED")
+      throw new ApiError(
+        "VALIDATION_ERROR",
+        "Archived routines cannot be assigned",
+        400,
+      );
     const [client, version] = await Promise.all([
       routineRepository.findClient(input.clientId, routine.organizationId),
       routineRepository.findVersion(id, input.routineVersionId),
     ]);
     if (!client) throw new ApiError("NOT_FOUND", "Client not found", 404);
     if (!version)
-      throw new ApiError("VALIDATION_ERROR", "Routine version is unavailable", 400);
+      throw new ApiError(
+        "VALIDATION_ERROR",
+        "Routine version is unavailable",
+        400,
+      );
     const assignment = await routineRepository.assign(id, input);
     return {
       id: assignment.id,

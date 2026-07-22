@@ -10,6 +10,24 @@ export type ClientAssessment = {
   hipCm: number | null;
   notes: string | null;
 };
+export type ClientRoutineAssignment = {
+  id: string;
+  routineId: string;
+  routineName: string;
+  version: number;
+  status: "ACTIVE" | "PAUSED" | "COMPLETED";
+  startDate: string;
+  endDate: string | null;
+};
+export type ClientCircuitAssignment = {
+  id: string;
+  circuitId: string;
+  circuitName: string;
+  version: number;
+  status: "ACTIVE" | "PAUSED" | "COMPLETED";
+  startDate: string;
+  endDate: string | null;
+};
 export type Client = {
   id: string;
   firstName: string;
@@ -32,12 +50,21 @@ export type Client = {
   latestAssessment: ClientAssessment | null;
   assessmentCount: number;
 };
-export type ClientDetail = Client & { assessments: ClientAssessment[] };
+export type ClientDetail = Client & {
+  assessments: ClientAssessment[];
+  routineAssignments: ClientRoutineAssignment[];
+  circuitAssignments: ClientCircuitAssignment[];
+};
 export type PaginatedClients = {
   items: Client[];
   page: number;
   limit: number;
   total: number;
   totalPages: number;
-  summary: { active: number; paused: number; completed: number; evaluations: number };
+  summary: {
+    active: number;
+    paused: number;
+    completed: number;
+    evaluations: number;
+  };
 };
