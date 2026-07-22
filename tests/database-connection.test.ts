@@ -18,6 +18,26 @@ describe("database connection errors", () => {
     });
   });
 
+  it("returns a safe 503 when Atlas rejects an empty database name", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const response = toApiErrorResponse(
+      new Error(
+        "Error code 8000 (AtlasError): empty database name not allowed",
+      ),
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "DATABASE_UNAVAILABLE",
+        message: "Database temporarily unavailable",
+      },
+    });
+    consoleError.mockRestore();
+  });
+
   it("keeps unexpected errors as internal errors", async () => {
     const consoleError = vi
       .spyOn(console, "error")
