@@ -48,27 +48,38 @@ describe("routine schemas", () => {
         days: [{ ...validRoutine.days[0], blocks: [] }],
       }),
     ).toThrow();
-    expect(() =>
-      routineInputSchema.parse({
-        ...validRoutine,
-        days: [
-          {
-            ...validRoutine.days[0],
-            blocks: [
-              {
-                ...validRoutine.days[0].blocks[0],
-                exercises: [
-                  {
-                    ...validRoutine.days[0].blocks[0].exercises[0],
-                    repsMin: 12,
-                    repsMax: 8,
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      }),
-    ).toThrow();
+    const result = routineInputSchema.safeParse({
+      ...validRoutine,
+      days: [
+        {
+          ...validRoutine.days[0],
+          blocks: [
+            {
+              ...validRoutine.days[0].blocks[0],
+              exercises: [
+                {
+                  ...validRoutine.days[0].blocks[0].exercises[0],
+                  repsMin: 12,
+                  repsMax: 8,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.path).toEqual([
+        "days",
+        0,
+        "blocks",
+        0,
+        "exercises",
+        0,
+        "repsMax",
+      ]);
+      expect(result.error.issues[0]?.message).toContain("igual o mayor");
+    }
   });
 });

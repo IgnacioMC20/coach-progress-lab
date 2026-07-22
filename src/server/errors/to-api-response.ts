@@ -8,8 +8,14 @@ export function toApiErrorResponse(error: unknown) {
       {
         error: {
           code: "VALIDATION_ERROR",
-          message: "Invalid request",
-          details: error.flatten(),
+          message: "Revisa los campos marcados antes de continuar.",
+          details: {
+            issues: error.issues.map((issue) => ({
+              path: issue.path,
+              message: issue.message,
+              code: issue.code,
+            })),
+          },
         },
       },
       { status: 400 },
@@ -31,7 +37,8 @@ export function toApiErrorResponse(error: unknown) {
       {
         error: {
           code: "DATABASE_UNAVAILABLE",
-          message: "Database temporarily unavailable",
+          message:
+            "La base de datos no está disponible temporalmente. Inténtalo de nuevo.",
         },
       },
       { status: 503 },
@@ -42,7 +49,7 @@ export function toApiErrorResponse(error: unknown) {
     {
       error: {
         code: "INTERNAL_ERROR",
-        message: "An unexpected error occurred",
+        message: "Ocurrió un error inesperado. Inténtalo de nuevo.",
       },
     },
     { status: 500 },

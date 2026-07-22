@@ -21,9 +21,12 @@ type ListInput = {
   limit: number;
 };
 
-const notFound = () => new ApiError("NOT_FOUND", "Exercise not found", 404);
+const notFound = () =>
+  new ApiError("NOT_FOUND", "No encontramos el ejercicio.", 404);
 
-function referenceMap(records: Awaited<ReturnType<typeof exerciseRepository.findMany>>) {
+function referenceMap(
+  records: Awaited<ReturnType<typeof exerciseRepository.findMany>>,
+) {
   return new Map<string, ExerciseReference>(
     records.map((exercise) => [
       exercise.id,
@@ -51,15 +54,28 @@ export const exerciseService = {
       movementPattern: input.movementPattern,
       ...(input.q ? { name: { contains: input.q, mode: "insensitive" } } : {}),
     };
-    const [records, total, weighted, bodyweight, withSubstitutions, allExercises] =
-      await Promise.all([
-        exerciseRepository.findMany(where, (input.page - 1) * input.limit, input.limit),
-        exerciseRepository.count(where),
-        exerciseRepository.count({ ...where, measurementType: "WEIGHT_REPS" }),
-        exerciseRepository.count({ ...where, measurementType: "BODYWEIGHT_REPS" }),
-        exerciseRepository.countWithSubstitutions(where),
-        exerciseRepository.findMany({ organizationId: organization.id }, 0, 500),
-      ]);
+    const [
+      records,
+      total,
+      weighted,
+      bodyweight,
+      withSubstitutions,
+      allExercises,
+    ] = await Promise.all([
+      exerciseRepository.findMany(
+        where,
+        (input.page - 1) * input.limit,
+        input.limit,
+      ),
+      exerciseRepository.count(where),
+      exerciseRepository.count({ ...where, measurementType: "WEIGHT_REPS" }),
+      exerciseRepository.count({
+        ...where,
+        measurementType: "BODYWEIGHT_REPS",
+      }),
+      exerciseRepository.countWithSubstitutions(where),
+      exerciseRepository.findMany({ organizationId: organization.id }, 0, 500),
+    ]);
     const substitutes = referenceMap(allExercises);
     return {
       items: records.map((exercise) => toExerciseDto(exercise, substitutes)),
@@ -74,7 +90,10 @@ export const exerciseService = {
     const exercise = await exerciseRepository.findById(id);
     if (!exercise) throw notFound();
     const substitutes = referenceMap(
-      await exerciseRepository.findByIds(exercise.substituteIds, exercise.organizationId),
+      await exerciseRepository.findByIds(
+        exercise.substituteIds,
+        exercise.organizationId,
+      ),
     );
     return toExerciseDto(exercise, substitutes);
   },
@@ -87,14 +106,17 @@ export const exerciseService = {
     if (exerciseId && substituteIds.includes(exerciseId))
       throw new ApiError(
         "VALIDATION_ERROR",
-        "An exercise cannot be its own substitute",
+        "Un ejercicio no puede ser su propio sustituto.",
         400,
       );
-    const exercises = await exerciseRepository.findByIds(substituteIds, organizationId);
+    const exercises = await exerciseRepository.findByIds(
+      substituteIds,
+      organizationId,
+    );
     if (exercises.length !== substituteIds.length)
       throw new ApiError(
         "VALIDATION_ERROR",
-        "One or more substitutes are unavailable",
+        "Uno o más ejercicios sustitutos no están disponibles.",
         400,
       );
   },
@@ -103,7 +125,7 @@ export const exerciseService = {
     if (!organization)
       throw new ApiError(
         "SETUP_REQUIRED",
-        "An organization is required before creating exercises",
+        "Configura una organización antes de crear ejercicios.",
         409,
       );
     await this.validateSubstitutes(input.substituteIds, organization.id);
@@ -113,7 +135,11 @@ export const exerciseService = {
   async update(id: string, input: ExerciseUpdate) {
     const exercise = await exerciseRepository.findById(id);
     if (!exercise) throw notFound();
-    await this.validateSubstitutes(input.substituteIds, exercise.organizationId, id);
+    await this.validateSubstitutes(
+      input.substituteIds,
+      exercise.organizationId,
+      id,
+    );
     await exerciseRepository.update(id, input);
     return this.get(id);
   },

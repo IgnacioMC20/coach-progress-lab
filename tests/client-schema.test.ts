@@ -12,11 +12,13 @@ describe("clientInputSchema", () => {
       firstName: "Ana",
       lastName: "Ruiz",
       email: "",
+      trainingLevel: "",
       birthDate: "1992-04-08",
       heightCm: "165",
       currentWeek: "3",
     });
     expect(result.email).toBeUndefined();
+    expect(result.trainingLevel).toBeUndefined();
     expect(result.heightCm).toBe(165);
     expect(result.currentWeek).toBe(3);
     expect(result.birthDate).toBeInstanceOf(Date);

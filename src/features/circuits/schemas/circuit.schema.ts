@@ -1,29 +1,44 @@
 import { z } from "zod";
 import { objectIdSchema } from "@/features/clients/schemas/client.schema";
 
-export const circuitStatusSchema = z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]);
-export const circuitAssignmentStatusSchema = z.enum([
-  "ACTIVE",
-  "PAUSED",
-  "COMPLETED",
-]);
+export const circuitStatusSchema = z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"], {
+  error: "Selecciona un estado válido",
+});
+export const circuitAssignmentStatusSchema = z.enum(
+  ["ACTIVE", "PAUSED", "COMPLETED"],
+  { error: "Selecciona un estado válido" },
+);
 
 const optionalText = z
   .string()
   .trim()
-  .max(2_000)
+  .max(2_000, "No puede superar 2,000 caracteres")
   .optional()
   .transform((value) => value || undefined);
 const optionalInteger = (min: number, max: number) =>
   z
-    .union([z.coerce.number().int().min(min).max(max), z.literal("")])
+    .union([
+      z.coerce
+        .number()
+        .int("Escribe un número entero")
+        .min(min, `El valor mínimo es ${min}`)
+        .max(max, `El valor máximo es ${max}`),
+      z.literal(""),
+    ])
     .optional()
     .transform((value) =>
       value === "" || value === undefined ? undefined : value,
     );
 const optionalNumber = (min: number, max: number) =>
   z
-    .union([z.coerce.number().finite().min(min).max(max), z.literal("")])
+    .union([
+      z.coerce
+        .number()
+        .finite("Escribe un número válido")
+        .min(min, `El valor mínimo es ${min}`)
+        .max(max, `El valor máximo es ${max}`),
+      z.literal(""),
+    ])
     .optional()
     .transform((value) =>
       value === "" || value === undefined ? undefined : value,
@@ -40,7 +55,10 @@ export const circuitExerciseInputSchema = z
   .refine(
     (exercise) =>
       exercise.reps !== undefined || exercise.durationSeconds !== undefined,
-    "Indica repeticiones o duración para cada ejercicio",
+    {
+      message: "Indica repeticiones o duración para cada ejercicio",
+      path: ["reps"],
+    },
   );
 
 const circuitContentSchema = z.object({
@@ -53,12 +71,21 @@ const circuitContentSchema = z.object({
 });
 
 export const circuitInputSchema = circuitContentSchema.extend({
-  name: z.string().trim().min(2).max(120),
+  name: z
+    .string()
+    .trim()
+    .min(2, "Escribe un nombre de al menos 2 caracteres")
+    .max(120, "El nombre no puede superar 120 caracteres"),
   description: optionalText,
   status: circuitStatusSchema.default("DRAFT"),
 });
 export const circuitUpdateSchema = z.object({
-  name: z.string().trim().min(2).max(120).optional(),
+  name: z
+    .string()
+    .trim()
+    .min(2, "Escribe un nombre de al menos 2 caracteres")
+    .max(120, "El nombre no puede superar 120 caracteres")
+    .optional(),
   description: optionalText,
   status: circuitStatusSchema.optional(),
 });

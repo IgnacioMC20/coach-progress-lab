@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { buttonVariants } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 import { clientApi } from "@/features/clients/services/client-api";
 import { checkInApi } from "@/features/check-ins/services/check-in-api";
 import type { CheckIn } from "@/features/check-ins/types/check-in";
@@ -225,6 +226,7 @@ function CheckInCard({
 export function CheckInsLibrary() {
   const [clientId, setClientId] = useState("");
   const queryClient = useQueryClient();
+  const toast = useToast();
   const clients = useQuery({
     queryKey: ["check-in-clients"],
     queryFn: () =>
@@ -241,8 +243,12 @@ export function CheckInsLibrary() {
   });
   const remove = useMutation({
     mutationFn: (id: string) => checkInApi.remove(id),
-    onSuccess: () =>
-      void queryClient.invalidateQueries({ queryKey: ["check-ins"] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["check-ins"] });
+      toast.success("Check-in eliminado");
+    },
+    onError: (error) =>
+      toast.error("No pudimos eliminar el check-in", error.message),
   });
   const selectedClient = clients.data?.items.find(
     (client) => client.id === clientId,

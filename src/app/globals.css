@@ -25,6 +25,13 @@ html {
   overflow-x: clip;
 }
 
+input[aria-invalid="true"],
+select[aria-invalid="true"],
+textarea[aria-invalid="true"] {
+  border-color: #fb7185;
+  box-shadow: 0 0 0 3px rgb(251 113 133 / 0.12);
+}
+
 .cpl-tour-popover.driver-popover {
   width: min(22rem, calc(100vw - 2rem));
   max-width: none;

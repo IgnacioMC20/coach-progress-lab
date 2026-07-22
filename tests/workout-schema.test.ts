@@ -13,7 +13,7 @@ const validWorkout = {
           weightKg: "60",
           reps: "8",
           rir: "2",
-          technique: "GOOD",
+          technique: "",
           painLevel: "0",
         },
       ],
@@ -26,20 +26,33 @@ describe("workoutInputSchema", () => {
     const result = workoutInputSchema.parse(validWorkout);
     const set = result.exercises[0]?.sets[0];
     expect(result.performedAt).toBeInstanceOf(Date);
-    expect(set).toMatchObject({ weightKg: 60, reps: 8, rir: 2, painLevel: 0 });
+    expect(set).toMatchObject({
+      weightKg: 60,
+      reps: 8,
+      rir: 2,
+      painLevel: 0,
+      technique: undefined,
+    });
   });
 
   it("requires at least one measurable value per set", () => {
-    expect(() =>
-      workoutInputSchema.parse({
-        ...validWorkout,
-        exercises: [
-          {
-            ...validWorkout.exercises[0],
-            sets: [{ technique: "GOOD" }],
-          },
-        ],
-      }),
-    ).toThrow();
+    const result = workoutInputSchema.safeParse({
+      ...validWorkout,
+      exercises: [
+        {
+          ...validWorkout.exercises[0],
+          sets: [{ technique: "GOOD" }],
+        },
+      ],
+    });
+    expect(result.success).toBe(false);
+    if (!result.success)
+      expect(result.error.issues[0]?.path).toEqual([
+        "exercises",
+        0,
+        "sets",
+        0,
+        "reps",
+      ]);
   });
 });

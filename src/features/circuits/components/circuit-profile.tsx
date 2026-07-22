@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Activity, ArrowLeft, CopyPlus, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import {
   circuitStatusLabel,
@@ -29,6 +30,7 @@ export function CircuitProfile() {
   const { circuitId } = useParams<{ circuitId: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const circuit = useQuery({
     queryKey: ["circuit", circuitId],
     queryFn: () => circuitApi.get(circuitId),
@@ -38,9 +40,12 @@ export function CircuitProfile() {
     mutationFn: () => circuitApi.remove(circuitId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["circuits"] });
+      toast.success("Circuito eliminado");
       router.push("/circuits");
       router.refresh();
     },
+    onError: (error) =>
+      toast.error("No pudimos eliminar el circuito", error.message),
   });
   if (circuit.isPending)
     return (

@@ -19,6 +19,7 @@ import {
 import { EmptyState } from "@/components/shared/empty-state";
 import { TermTooltip } from "@/components/shared/term-tooltip";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 import { clientApi } from "@/features/clients/services/client-api";
 import {
   assignmentStatusLabel,
@@ -58,6 +59,7 @@ export function RoutineProfile() {
   const { routineId } = useParams<{ routineId: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [clientId, setClientId] = useState("");
   const [versionId, setVersionId] = useState("");
   const routine = useQuery({
@@ -83,8 +85,10 @@ export function RoutineProfile() {
     onSuccess: () => {
       setClientId("");
       refresh();
+      toast.success("Rutina asignada");
     },
-    onError: (error) => window.alert(error.message),
+    onError: (error) =>
+      toast.error("No pudimos asignar la rutina", error.message),
   });
   const updateAssignment = useMutation({
     mutationFn: ({
@@ -94,15 +98,23 @@ export function RoutineProfile() {
       id: string;
       status: RoutineAssignmentStatus;
     }) => routineApi.updateAssignment(id, { status }),
-    onSuccess: refresh,
+    onSuccess: () => {
+      refresh();
+      toast.success("Asignación actualizada");
+    },
+    onError: (error) =>
+      toast.error("No pudimos actualizar la asignación", error.message),
   });
   const remove = useMutation({
     mutationFn: () => routineApi.remove(routineId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["routines"] });
+      toast.success("Rutina eliminada");
       router.push("/routines");
       router.refresh();
     },
+    onError: (error) =>
+      toast.error("No pudimos eliminar la rutina", error.message),
   });
   if (routine.isPending)
     return (

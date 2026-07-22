@@ -27,7 +27,8 @@ const buildWhere = (input: ListInput): Prisma.ClientWhereInput => ({
       }
     : {}),
 });
-const notFound = () => new ApiError("NOT_FOUND", "Client not found", 404);
+const notFound = () =>
+  new ApiError("NOT_FOUND", "No encontramos el cliente.", 404);
 
 export const clientService = {
   async list(input: ListInput) {
@@ -81,7 +82,7 @@ export const clientService = {
     if (!context)
       throw new ApiError(
         "SETUP_REQUIRED",
-        "An organization is required before creating clients",
+        "Configura una organización antes de crear clientes.",
         409,
       );
     return toClientDto(await clientRepository.create(input, context));
@@ -110,7 +111,7 @@ export const clientService = {
     input: AssessmentInput,
   ) {
     if (!(await clientRepository.findAssessment(clientId, assessmentId)))
-      throw new ApiError("NOT_FOUND", "Assessment not found", 404);
+      throw new ApiError("NOT_FOUND", "No encontramos la evaluación.", 404);
     const assessment = await clientRepository.updateAssessment(
       assessmentId,
       input,

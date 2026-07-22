@@ -22,6 +22,8 @@ import {
   UserRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FormAlert, FormField } from "@/components/ui/form-field";
+import { useToast } from "@/components/ui/toast";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TermTooltip } from "@/components/shared/term-tooltip";
 import { assessmentFormSchema } from "@/features/clients/schemas/client.schema";
@@ -40,6 +42,7 @@ import type {
 import { assignmentStatusLabel } from "@/features/routines/routine-labels";
 import { routineApi } from "@/features/routines/services/routine-api";
 import { cn } from "@/lib/utils";
+import { applyApiError } from "@/lib/form-errors";
 
 type AssessmentFormValues = {
   assessedAt?: string;
@@ -85,10 +88,11 @@ function AssessmentForm({
   onFinished: () => void;
 }) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const form = useForm<AssessmentFormValues>({
-    resolver: zodResolver(
-      assessmentFormSchema,
-    ) as Resolver<AssessmentFormValues>,
+    resolver: zodResolver(assessmentFormSchema, undefined, {
+      raw: true,
+    }) as Resolver<AssessmentFormValues>,
     defaultValues: assessment
       ? {
           assessedAt: assessment.assessedAt.slice(0, 10),
@@ -98,6 +102,9 @@ function AssessmentForm({
           notes: assessment.notes ?? "",
         }
       : { assessedAt: new Date().toISOString().slice(0, 10) },
+    mode: "onBlur",
+    reValidateMode: "onChange",
+    shouldFocusError: true,
   });
   const mutation = useMutation({
     mutationFn: (values: AssessmentFormValues) =>
@@ -107,61 +114,93 @@ function AssessmentForm({
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["client", clientId] });
       void queryClient.invalidateQueries({ queryKey: ["clients"] });
+      toast.success(
+        assessment ? "Evaluación actualizada" : "Evaluación registrada",
+      );
       onFinished();
     },
   });
   return (
     <form
-      onSubmit={form.handleSubmit((values) =>
-        mutation.mutate(values, {
-          onError: (error) => form.setError("root", { message: error.message }),
-        }),
+      onSubmit={form.handleSubmit(
+        (values) =>
+          mutation.mutate(values, {
+            onError: (error) => {
+              const message = applyApiError(error, form.setError);
+              toast.error("No pudimos guardar la evaluación", message);
+            },
+          }),
+        () =>
+          toast.error(
+            "Revisa los campos marcados",
+            "Corrige los errores antes de guardar.",
+          ),
       )}
       className="mt-4 grid gap-3 rounded-xl border border-violet-100 bg-violet-50/45 p-4 md:grid-cols-4"
+      noValidate
     >
-      <label className="grid gap-1 text-xs font-semibold text-slate-600">
-        Fecha
+      <FormField
+        name="assessedAt"
+        label="Fecha"
+        error={form.formState.errors.assessedAt?.message}
+      >
         <input
           type="date"
           className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm"
           {...form.register("assessedAt")}
         />
-      </label>
-      <label className="grid gap-1 text-xs font-semibold text-slate-600">
-        Peso (kg)
+      </FormField>
+      <FormField
+        name="weightKg"
+        label="Peso (kg)"
+        hint="Entre 20 y 400 kg."
+        error={form.formState.errors.weightKg?.message}
+      >
         <input
           type="number"
           step="0.1"
           className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm"
           {...form.register("weightKg", numberValue)}
         />
-      </label>
-      <label className="grid gap-1 text-xs font-semibold text-slate-600">
-        Grasa corporal (%)
+      </FormField>
+      <FormField
+        name="bodyFatPercentage"
+        label="Grasa corporal (%)"
+        hint="Entre 1 y 80%."
+        error={form.formState.errors.bodyFatPercentage?.message}
+      >
         <input
           type="number"
           step="0.1"
           className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm"
           {...form.register("bodyFatPercentage", numberValue)}
         />
-      </label>
-      <label className="grid gap-1 text-xs font-semibold text-slate-600">
-        Cintura (cm)
+      </FormField>
+      <FormField
+        name="waistCm"
+        label="Cintura (cm)"
+        error={form.formState.errors.waistCm?.message}
+      >
         <input
           type="number"
           step="0.1"
           className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm"
           {...form.register("waistCm", numberValue)}
         />
-      </label>
-      <label className="md:col-span-3">
-        <span className="sr-only">Observaciones</span>
+      </FormField>
+      <FormField
+        name="notes"
+        label="Observaciones"
+        hint="Máximo 2,000 caracteres."
+        error={form.formState.errors.notes?.message}
+        className="md:col-span-3"
+      >
         <input
           className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
           placeholder="Observaciones de la evaluación"
           {...form.register("notes")}
         />
-      </label>
+      </FormField>
       <Button type="submit" size="sm" disabled={mutation.isPending}>
         <ClipboardPlus size={15} />
         {mutation.isPending
@@ -170,17 +209,16 @@ function AssessmentForm({
             ? "Guardar evaluación"
             : "Registrar"}
       </Button>
-      {form.formState.errors.root && (
-        <p role="alert" className="text-sm text-rose-600 md:col-span-4">
-          {form.formState.errors.root.message}
-        </p>
-      )}
+      <div className="md:col-span-4">
+        <FormAlert message={form.formState.errors.root?.server?.message} />
+      </div>
     </form>
   );
 }
 
 function ClientProgramming({ client }: { client: ClientDetail }) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [routineId, setRoutineId] = useState("");
   const [routineVersionId, setRoutineVersionId] = useState("");
   const [circuitId, setCircuitId] = useState("");
@@ -220,7 +258,13 @@ function ClientProgramming({ client }: { client: ClientDetail }) {
       setRoutineId("");
       setRoutineVersionId("");
       refresh();
+      toast.success(
+        "Rutina asignada",
+        `La rutina se asignó a ${client.fullName}.`,
+      );
     },
+    onError: (error) =>
+      toast.error("No pudimos asignar la rutina", error.message),
   });
   const assignCircuit = useMutation({
     mutationFn: () =>
@@ -233,7 +277,13 @@ function ClientProgramming({ client }: { client: ClientDetail }) {
       setCircuitId("");
       setCircuitVersionId("");
       refresh();
+      toast.success(
+        "Circuito asignado",
+        `El circuito se asignó a ${client.fullName}.`,
+      );
     },
+    onError: (error) =>
+      toast.error("No pudimos asignar el circuito", error.message),
   });
   const updateRoutine = useMutation({
     mutationFn: ({
@@ -243,7 +293,12 @@ function ClientProgramming({ client }: { client: ClientDetail }) {
       id: string;
       status: "PAUSED" | "COMPLETED";
     }) => routineApi.updateAssignment(id, { status }),
-    onSuccess: refresh,
+    onSuccess: () => {
+      refresh();
+      toast.success("Estado de rutina actualizado");
+    },
+    onError: (error) =>
+      toast.error("No pudimos actualizar la rutina", error.message),
   });
   const updateCircuit = useMutation({
     mutationFn: ({
@@ -253,7 +308,12 @@ function ClientProgramming({ client }: { client: ClientDetail }) {
       id: string;
       status: "PAUSED" | "COMPLETED";
     }) => circuitApi.updateAssignment(id, { status }),
-    onSuccess: refresh,
+    onSuccess: () => {
+      refresh();
+      toast.success("Estado de circuito actualizado");
+    },
+    onError: (error) =>
+      toast.error("No pudimos actualizar el circuito", error.message),
   });
   const activeRoutines =
     routines.data?.items.filter((item) => item.status !== "ARCHIVED") ?? [];
@@ -571,15 +631,19 @@ export function ClientProfile() {
   const clientId = params.clientId;
   const router = useRouter();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [selectedAssessment, setSelectedAssessment] =
     useState<ClientAssessment | null>(null);
   const deletion = useMutation({
     mutationFn: () => clientApi.remove(clientId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["clients"] });
+      toast.success("Cliente eliminado");
       router.push("/clients");
       router.refresh();
     },
+    onError: (error) =>
+      toast.error("No pudimos eliminar el cliente", error.message),
   });
   const {
     data: client,

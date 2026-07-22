@@ -8,14 +8,22 @@ import { ApiError } from "@/server/errors/api-error";
 import { workoutRepository } from "@/server/repositories/workout.repository";
 import { toWorkoutDto } from "./workout.mapper";
 
-type ListInput = { clientId?: string; weekStart?: Date; page: number; limit: number };
-const notFound = () => new ApiError("NOT_FOUND", "Workout session not found", 404);
+type ListInput = {
+  clientId?: string;
+  weekStart?: Date;
+  page: number;
+  limit: number;
+};
+const notFound = () =>
+  new ApiError("NOT_FOUND", "No encontramos la sesión.", 404);
 
 function idsFromWorkout(input: Pick<WorkoutInput, "exercises">) {
   return [...new Set(input.exercises.map((exercise) => exercise.exerciseId))];
 }
 
-function summary(records: Awaited<ReturnType<typeof workoutRepository.findMany>>) {
+function summary(
+  records: Awaited<ReturnType<typeof workoutRepository.findMany>>,
+) {
   return records.reduce(
     (result, workout) => {
       result.sessions += 1;
@@ -49,10 +57,16 @@ export const workoutService = {
     const where: Prisma.WorkoutSessionWhereInput = {
       organizationId: organization.id,
       clientId: input.clientId,
-      ...(input.weekStart ? { performedAt: { gte: input.weekStart, lt: weekEnd } } : {}),
+      ...(input.weekStart
+        ? { performedAt: { gte: input.weekStart, lt: weekEnd } }
+        : {}),
     };
     const [records, total, allRecords] = await Promise.all([
-      workoutRepository.findMany(where, (input.page - 1) * input.limit, input.limit),
+      workoutRepository.findMany(
+        where,
+        (input.page - 1) * input.limit,
+        input.limit,
+      ),
       workoutRepository.count(where),
       workoutRepository.findMany(where, 0, 500),
     ]);
@@ -63,8 +77,13 @@ export const workoutService = {
         ),
       ),
     ];
-    const exercises = await workoutRepository.findExercises(exerciseIds, organization.id);
-    const references = new Map(exercises.map((exercise) => [exercise.id, exercise]));
+    const exercises = await workoutRepository.findExercises(
+      exerciseIds,
+      organization.id,
+    );
+    const references = new Map(
+      exercises.map((exercise) => [exercise.id, exercise]),
+    );
     const weeklySummary = summary(allRecords);
     return {
       items: records.map((workout) => toWorkoutDto(workout, references)),
@@ -90,13 +109,19 @@ export const workoutService = {
       new Map(exercises.map((exercise) => [exercise.id, exercise])),
     );
   },
-  async validateContent(input: Pick<WorkoutInput, "exercises">, organizationId: string) {
+  async validateContent(
+    input: Pick<WorkoutInput, "exercises">,
+    organizationId: string,
+  ) {
     const ids = idsFromWorkout(input);
-    const exercises = await workoutRepository.findExercises(ids, organizationId);
+    const exercises = await workoutRepository.findExercises(
+      ids,
+      organizationId,
+    );
     if (exercises.length !== ids.length)
       throw new ApiError(
         "VALIDATION_ERROR",
-        "One or more exercises are unavailable",
+        "Uno o más ejercicios no están disponibles.",
         400,
       );
   },
@@ -105,11 +130,15 @@ export const workoutService = {
     if (!organization)
       throw new ApiError(
         "SETUP_REQUIRED",
-        "An organization is required before logging workouts",
+        "Configura una organización antes de registrar sesiones.",
         409,
       );
-    const client = await workoutRepository.findClient(input.clientId, organization.id);
-    if (!client) throw new ApiError("NOT_FOUND", "Client not found", 404);
+    const client = await workoutRepository.findClient(
+      input.clientId,
+      organization.id,
+    );
+    if (!client)
+      throw new ApiError("NOT_FOUND", "No encontramos el cliente.", 404);
     await this.validateContent(input, organization.id);
     const workout = await workoutRepository.create(input, organization.id);
     return this.get(workout.id);
@@ -118,7 +147,10 @@ export const workoutService = {
     const existing = await workoutRepository.findById(id);
     if (!existing) throw notFound();
     if (input.exercises)
-      await this.validateContent({ exercises: input.exercises }, existing.organizationId);
+      await this.validateContent(
+        { exercises: input.exercises },
+        existing.organizationId,
+      );
     await workoutRepository.update(id, input);
     return this.get(id);
   },

@@ -14,6 +14,7 @@ import {
 import { EmptyState } from "@/components/shared/empty-state";
 import { TermTooltip } from "@/components/shared/term-tooltip";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 import {
   equipmentLabel,
   measurementTypeLabel,
@@ -38,6 +39,7 @@ export function ExerciseProfile() {
   const { exerciseId } = useParams<{ exerciseId: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const query = useQuery({
     queryKey: ["exercise", exerciseId],
     queryFn: () => exerciseApi.get(exerciseId),
@@ -47,9 +49,12 @@ export function ExerciseProfile() {
     mutationFn: () => exerciseApi.remove(exerciseId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["exercises"] });
+      toast.success("Ejercicio eliminado");
       router.push("/exercises");
       router.refresh();
     },
+    onError: (error) =>
+      toast.error("No pudimos eliminar el ejercicio", error.message),
   });
   if (query.isPending)
     return (

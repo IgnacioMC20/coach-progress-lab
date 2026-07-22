@@ -7,6 +7,7 @@ import { ArrowLeft, Dumbbell, Pencil, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TermTooltip } from "@/components/shared/term-tooltip";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 import {
   techniqueLabel,
   workoutStatusLabel,
@@ -23,6 +24,7 @@ export function WorkoutProfile() {
   const { workoutId } = useParams<{ workoutId: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const query = useQuery({
     queryKey: ["workout", workoutId],
     queryFn: () => workoutApi.get(workoutId),
@@ -32,9 +34,12 @@ export function WorkoutProfile() {
     mutationFn: () => workoutApi.remove(workoutId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["workouts"] });
+      toast.success("Sesión eliminada");
       router.push("/workouts");
       router.refresh();
     },
+    onError: (error) =>
+      toast.error("No pudimos eliminar la sesión", error.message),
   });
   if (query.isPending)
     return (
