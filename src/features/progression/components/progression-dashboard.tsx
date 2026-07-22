@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -286,7 +287,22 @@ export function ProgressionDashboard() {
         </label>
       </div>
 
-      {!clientId ? (
+      {!clientId && clients.isSuccess && clients.data.items.length === 0 ? (
+        <div className="mt-8">
+          <EmptyState
+            title="Aún no hay clientes activos"
+            description="Crea un cliente y registra sesiones completadas para activar la progresión."
+            action={
+              <Link
+                href="/clients/new"
+                className="bg-primary inline-flex h-10 items-center rounded-lg px-4 text-sm font-semibold text-white hover:opacity-90"
+              >
+                Crear cliente
+              </Link>
+            }
+          />
+        </div>
+      ) : !clientId ? (
         <div className="border-lavender/70 bg-lavender/15 mt-8 flex items-center gap-3 rounded-2xl border p-5 text-sm text-slate-600">
           <TrendingUp className="text-primary" size={22} />
           Selecciona un cliente con sesiones completadas para calcular su

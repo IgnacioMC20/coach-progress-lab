@@ -47,7 +47,9 @@ const metricCards = [
 ] as const;
 
 function initials(client: Client) {
-  return `${client.firstName[0]}${client.lastName[0]}`;
+  const first = client.firstName?.trim().charAt(0) ?? "";
+  const last = client.lastName?.trim().charAt(0) ?? "";
+  return `${first}${last}`.toUpperCase() || "?";
 }
 function ClientCard({ client }: { client: Client }) {
   const weight = client.latestAssessment?.weightKg;
@@ -249,8 +251,26 @@ export function ClientsSelector() {
           </div>
         ) : (
           <EmptyState
-            title="No hay clientes para este filtro"
-            description="Crea un cliente o cambia los filtros de búsqueda."
+            title={
+              status === "ALL" && !search
+                ? "Aún no hay clientes"
+                : "No hay clientes para este filtro"
+            }
+            description={
+              status === "ALL" && !search
+                ? "Crea tu primer perfil para comenzar a programar y registrar progreso."
+                : "Crea un cliente o cambia los filtros de búsqueda."
+            }
+            action={
+              status === "ALL" && !search ? (
+                <Link
+                  href="/clients/new"
+                  className={cn(buttonVariants(), "gap-2")}
+                >
+                  <Plus size={16} /> Crear cliente
+                </Link>
+              ) : undefined
+            }
           />
         )}
       </div>

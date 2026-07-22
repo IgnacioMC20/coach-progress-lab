@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ChevronDown, Plus, Save, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { EmptyState } from "@/components/shared/empty-state";
 import { TermTooltip } from "@/components/shared/term-tooltip";
 import { exerciseApi } from "@/features/exercises/services/exercise-api";
 import {
@@ -125,8 +126,14 @@ export function RoutineBuilder({ routine }: { routine?: RoutineDetail }) {
     queryKey: ["routine-exercise-options"],
     queryFn: () => exerciseApi.list(new URLSearchParams({ limit: "50" })),
   });
+  const noExercises = exercises.isSuccess && exercises.data.items.length === 0;
+  const canSave = exercises.isSuccess && exercises.data.items.length > 0;
   const mutation = useMutation({
     mutationFn: async (values: HeaderValues) => {
+      if (noExercises)
+        throw new Error(
+          "Crea al menos un ejercicio antes de guardar una rutina.",
+        );
       const payload = { ...values, days };
       const parsed = routine
         ? routineVersionInputSchema.safeParse({ notes: values.notes, days })
@@ -209,6 +216,22 @@ export function RoutineBuilder({ routine }: { routine?: RoutineDetail }) {
         <ArrowLeft size={16} />
         Volver a rutinas
       </Link>
+      {noExercises && (
+        <div className="mt-5">
+          <EmptyState
+            title="Aún no hay ejercicios disponibles"
+            description="La rutina necesita al menos un ejercicio de la biblioteca."
+            action={
+              <Link
+                href="/exercises/new"
+                className="bg-primary inline-flex h-10 items-center rounded-lg px-4 text-sm font-semibold text-white hover:opacity-90"
+              >
+                Crear ejercicio
+              </Link>
+            }
+          />
+        </div>
+      )}
       <form onSubmit={form.handleSubmit(onSubmit)} className="mt-5 space-y-5">
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(32,23,67,0.05)]">
           <div className="flex flex-col justify-between gap-4 md:flex-row">
@@ -404,6 +427,7 @@ export function RoutineBuilder({ routine }: { routine?: RoutineDetail }) {
                                   exerciseId: event.target.value,
                                 })
                               }
+                              disabled={noExercises}
                               className="focus:border-primary h-9 min-w-0 rounded-lg border border-slate-200 bg-white px-2 text-sm font-semibold outline-none"
                             >
                               <option value="">
@@ -578,7 +602,7 @@ export function RoutineBuilder({ routine }: { routine?: RoutineDetail }) {
           >
             Cancelar
           </Link>
-          <Button type="submit" disabled={mutation.isPending}>
+          <Button type="submit" disabled={mutation.isPending || !canSave}>
             <Save size={16} />
             {mutation.isPending
               ? "Guardando…"

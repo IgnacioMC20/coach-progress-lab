@@ -31,15 +31,37 @@ const notFound = () => new ApiError("NOT_FOUND", "Client not found", 404);
 
 export const clientService = {
   async list(input: ListInput) {
-    const where = buildWhere(input);
-    const [records, total, active, paused, completed, evaluations] = await Promise.all([
-      clientRepository.findMany(where, (input.page - 1) * input.limit, input.limit),
-      clientRepository.count(where),
-      clientRepository.count({ ...where, status: "ACTIVE" }),
-      clientRepository.count({ ...where, status: "PAUSED" }),
-      clientRepository.count({ ...where, status: "COMPLETED" }),
-      import("@/server/db/prisma").then(({ prisma }) => prisma.clientAssessment.count()),
-    ]);
+    const organization = await clientRepository.findDefaultOrganization();
+    if (!organization)
+      return {
+        items: [],
+        page: input.page,
+        limit: input.limit,
+        total: 0,
+        totalPages: 1,
+        summary: { active: 0, paused: 0, completed: 0, evaluations: 0 },
+      };
+    const where = {
+      ...buildWhere(input),
+      organizationId: organization.id,
+    } satisfies Prisma.ClientWhereInput;
+    const [records, total, active, paused, completed, evaluations] =
+      await Promise.all([
+        clientRepository.findMany(
+          where,
+          (input.page - 1) * input.limit,
+          input.limit,
+        ),
+        clientRepository.count(where),
+        clientRepository.count({ ...where, status: "ACTIVE" }),
+        clientRepository.count({ ...where, status: "PAUSED" }),
+        clientRepository.count({ ...where, status: "COMPLETED" }),
+        import("@/server/db/prisma").then(({ prisma }) =>
+          prisma.clientAssessment.count({
+            where: { client: { organizationId: organization.id } },
+          }),
+        ),
+      ]);
     return {
       items: records.map(toClientDto),
       page: input.page,
@@ -82,10 +104,17 @@ export const clientService = {
       updatedAt: assessment.updatedAt.toISOString(),
     };
   },
-  async updateAssessment(clientId: string, assessmentId: string, input: AssessmentInput) {
+  async updateAssessment(
+    clientId: string,
+    assessmentId: string,
+    input: AssessmentInput,
+  ) {
     if (!(await clientRepository.findAssessment(clientId, assessmentId)))
       throw new ApiError("NOT_FOUND", "Assessment not found", 404);
-    const assessment = await clientRepository.updateAssessment(assessmentId, input);
+    const assessment = await clientRepository.updateAssessment(
+      assessmentId,
+      input,
+    );
     return {
       ...assessment,
       assessedAt: assessment.assessedAt.toISOString(),

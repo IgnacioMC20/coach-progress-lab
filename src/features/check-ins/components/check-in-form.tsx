@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { ArrowLeft, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { EmptyState } from "@/components/shared/empty-state";
 import { clientApi } from "@/features/clients/services/client-api";
 import {
   checkInInputSchema,
@@ -35,7 +36,13 @@ const inputClass =
 const numberValue = {
   setValueAs: (value: string) => (value === "" ? undefined : Number(value)),
 };
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="grid gap-1.5 text-sm font-semibold text-slate-700">
       <span>{label}</span>
@@ -67,10 +74,18 @@ export function CheckInForm({ checkIn }: { checkIn?: CheckIn }) {
   });
   const clients = useQuery({
     queryKey: ["check-in-form-clients"],
-    queryFn: () => clientApi.list(new URLSearchParams({ limit: "50", status: "ACTIVE" })),
+    queryFn: () =>
+      clientApi.list(new URLSearchParams({ limit: "50", status: "ACTIVE" })),
   });
+  const noClients = clients.isSuccess && clients.data.items.length === 0;
+  const canSave =
+    Boolean(checkIn) || (clients.isSuccess && clients.data.items.length > 0);
   const mutation = useMutation({
     mutationFn: (values: CheckInFormValues) => {
+      if (!checkIn && noClients)
+        throw new Error(
+          "Crea al menos un cliente antes de registrar un check-in.",
+        );
       const parsed = checkIn
         ? checkInUpdateSchema.safeParse(values)
         : checkInInputSchema.safeParse(values);
@@ -97,10 +112,25 @@ export function CheckInForm({ checkIn }: { checkIn?: CheckIn }) {
         <ArrowLeft size={16} />
         Volver a check-ins
       </Link>
+      {!checkIn && noClients && (
+        <EmptyState
+          title="Aún no hay clientes disponibles"
+          description="Crea un perfil de cliente antes de registrar un check-in."
+          action={
+            <Link
+              href="/clients/new"
+              className="bg-primary inline-flex h-10 items-center rounded-lg px-4 text-sm font-semibold text-white hover:opacity-90"
+            >
+              Crear cliente
+            </Link>
+          }
+        />
+      )}
       <form
         onSubmit={form.handleSubmit((values) =>
           mutation.mutate(values, {
-            onError: (error) => form.setError("root", { message: error.message }),
+            onError: (error) =>
+              form.setError("root", { message: error.message }),
           }),
         )}
         className="mt-5 space-y-5"
@@ -119,7 +149,7 @@ export function CheckInForm({ checkIn }: { checkIn?: CheckIn }) {
             <Field label="Cliente">
               <select
                 {...form.register("clientId")}
-                disabled={Boolean(checkIn)}
+                disabled={Boolean(checkIn) || noClients}
                 className={inputClass}
               >
                 <option value="">Seleccionar cliente</option>
@@ -253,7 +283,7 @@ export function CheckInForm({ checkIn }: { checkIn?: CheckIn }) {
           >
             Cancelar
           </Link>
-          <Button type="submit" disabled={mutation.isPending}>
+          <Button type="submit" disabled={mutation.isPending || !canSave}>
             <Save size={16} />
             {mutation.isPending ? "Guardando…" : "Guardar check-in"}
           </Button>

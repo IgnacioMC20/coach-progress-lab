@@ -31,6 +31,8 @@ export type ClientDetailRecord = Prisma.ClientGetPayload<{
 }>;
 
 export const clientRepository = {
+  findDefaultOrganization: () =>
+    prisma.organization.findFirst({ orderBy: { createdAt: "asc" } }),
   findMany: (where: Prisma.ClientWhereInput, skip: number, take: number) =>
     prisma.client.findMany({
       where,

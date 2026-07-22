@@ -48,6 +48,10 @@ type AssessmentFormValues = {
   waistCm?: number;
   notes?: string;
 };
+function clientInitials(firstName: string, lastName: string) {
+  const initials = `${firstName?.trim().charAt(0) ?? ""}${lastName?.trim().charAt(0) ?? ""}`;
+  return initials.toUpperCase() || "?";
+}
 const numberValue = {
   setValueAs: (value: string) => (value === "" ? undefined : Number(value)),
 };
@@ -279,6 +283,17 @@ function ClientProgramming({ client }: { client: ClientDetail }) {
             <h3 className="font-bold">Asignar rutina</h3>
           </div>
           <div className="mt-4 grid gap-3">
+            {routines.isSuccess && activeRoutines.length === 0 && (
+              <p className="rounded-lg border border-dashed border-purple/40 bg-white/70 p-3 text-xs leading-5 text-slate-600">
+                No hay rutinas asignables todavía.{" "}
+                <Link
+                  href="/routines/new"
+                  className="text-primary font-bold hover:underline"
+                >
+                  Crear una rutina
+                </Link>
+              </p>
+            )}
             <label className="grid gap-1 text-xs font-semibold text-slate-600">
               Rutina
               <select
@@ -287,6 +302,7 @@ function ClientProgramming({ client }: { client: ClientDetail }) {
                   setRoutineId(event.target.value);
                   setRoutineVersionId("");
                 }}
+                disabled={activeRoutines.length === 0}
                 className="h-10 rounded-lg border border-purple/40 bg-white px-3 text-sm"
               >
                 <option value="">Seleccionar rutina</option>
@@ -343,6 +359,17 @@ function ClientProgramming({ client }: { client: ClientDetail }) {
             <h3 className="font-bold">Asignar circuito</h3>
           </div>
           <div className="mt-4 grid gap-3">
+            {circuits.isSuccess && activeCircuits.length === 0 && (
+              <p className="rounded-lg border border-dashed border-blue/45 bg-white/70 p-3 text-xs leading-5 text-slate-600">
+                No hay circuitos asignables todavía.{" "}
+                <Link
+                  href="/circuits/new"
+                  className="text-primary font-bold hover:underline"
+                >
+                  Crear un circuito
+                </Link>
+              </p>
+            )}
             <label className="grid gap-1 text-xs font-semibold text-slate-600">
               Circuito
               <select
@@ -351,6 +378,7 @@ function ClientProgramming({ client }: { client: ClientDetail }) {
                   setCircuitId(event.target.value);
                   setCircuitVersionId("");
                 }}
+                disabled={activeCircuits.length === 0}
                 className="h-10 rounded-lg border border-blue/45 bg-white px-3 text-sm"
               >
                 <option value="">Seleccionar circuito</option>
@@ -585,8 +613,7 @@ export function ClientProfile() {
         <div className="flex flex-col justify-between gap-5 sm:flex-row">
           <div className="flex items-center gap-4">
             <div className="from-pink via-lavender to-blue text-primary grid size-16 place-items-center rounded-full bg-gradient-to-br text-lg font-bold">
-              {client.firstName[0]}
-              {client.lastName[0]}
+              {clientInitials(client.firstName, client.lastName)}
             </div>
             <div>
               <p className="text-primary text-xs font-bold tracking-[0.16em] uppercase">
