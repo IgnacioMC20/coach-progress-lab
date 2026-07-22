@@ -247,6 +247,7 @@ export function CheckInsLibrary() {
   const selectedClient = clients.data?.items.find(
     (client) => client.id === clientId,
   );
+  const noClients = clients.isSuccess && clients.data.items.length === 0;
   return (
     <section className="mx-auto max-w-7xl">
       <div
@@ -363,6 +364,21 @@ export function CheckInsLibrary() {
             suffix="%"
           />
         </div>
+      ) : noClients ? (
+        <div className="mt-6">
+          <EmptyState
+            title="Aún no hay clientes"
+            description="Crea un perfil antes de registrar y comparar check-ins."
+            action={
+              <Link
+                href="/clients/new"
+                className={cn(buttonVariants(), "gap-2")}
+              >
+                Crear cliente
+              </Link>
+            }
+          />
+        </div>
       ) : (
         <div className="border-lavender/70 bg-lavender/15 mt-6 flex items-center gap-3 rounded-2xl border p-4 text-sm text-slate-600">
           <ClipboardCheck className="text-primary" size={20} />
@@ -421,7 +437,21 @@ export function CheckInsLibrary() {
           <div className="space-y-4">
             <EmptyState
               title="No hay check-ins todavía"
-              description="Registra el primer seguimiento semanal para empezar a ver tendencias."
+              description={
+                noClients
+                  ? "Crea un perfil de cliente para empezar el seguimiento semanal."
+                  : "Registra el primer seguimiento semanal para empezar a ver tendencias."
+              }
+              action={
+                noClients ? (
+                  <Link
+                    href="/clients/new"
+                    className={cn(buttonVariants(), "gap-2")}
+                  >
+                    Crear cliente
+                  </Link>
+                ) : undefined
+              }
             />
             <div className="flex justify-center">
               <Link

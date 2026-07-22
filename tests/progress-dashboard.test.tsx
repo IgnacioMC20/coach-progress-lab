@@ -60,4 +60,36 @@ describe("ProgressDashboard", () => {
       screen.getByText("No hay actividad registrada durante este periodo."),
     ).toBeInTheDocument();
   });
+
+  it("shows a guided empty state when there are no active clients", async () => {
+    getDashboard.mockResolvedValue({
+      periodStart: "2026-07-06T12:00:00.000Z",
+      summary: {
+        activeClients: 0,
+        completedWorkouts: 0,
+        volumeKg: 0,
+        attentionClients: 0,
+      },
+      attention: [],
+      topProgress: [],
+      recentActivity: [],
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ProgressDashboard />
+      </QueryClientProvider>,
+    );
+
+    expect(
+      await screen.findByText("Aún no hay clientes activos"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Crear cliente" })).toHaveAttribute(
+      "href",
+      "/clients/new",
+    );
+  });
 });

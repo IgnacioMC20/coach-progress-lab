@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { EmptyState } from "@/components/shared/empty-state";
 import { TermTooltip } from "@/components/shared/term-tooltip";
 import { clientApi } from "@/features/clients/services/client-api";
 import { exerciseApi } from "@/features/exercises/services/exercise-api";
@@ -112,8 +113,24 @@ export function WorkoutForm({ workout }: { workout?: WorkoutSession }) {
     queryKey: ["workout-form-exercises"],
     queryFn: () => exerciseApi.list(new URLSearchParams({ limit: "50" })),
   });
+  const noClients = clients.isSuccess && clients.data.items.length === 0;
+  const noExercises =
+    exerciseOptions.isSuccess && exerciseOptions.data.items.length === 0;
+  const dependenciesReady =
+    exerciseOptions.isSuccess &&
+    exerciseOptions.data.items.length > 0 &&
+    (Boolean(workout) ||
+      (clients.isSuccess && clients.data.items.length > 0));
   const mutation = useMutation({
     mutationFn: (values: HeaderValues) => {
+      if (!workout && noClients)
+        throw new Error(
+          "Crea al menos un cliente antes de registrar sesiones.",
+        );
+      if (noExercises)
+        throw new Error(
+          "Crea al menos un ejercicio antes de registrar sesiones.",
+        );
       const payload = { ...values, exercises };
       const parsed = workout
         ? workoutUpdateSchema.safeParse(payload)
@@ -173,6 +190,36 @@ export function WorkoutForm({ workout }: { workout?: WorkoutSession }) {
         <ArrowLeft size={16} />
         Volver a entrenamientos
       </Link>
+      {!workout && noClients && (
+        <EmptyState
+          title="Aún no hay clientes disponibles"
+          description="Crea un perfil de cliente antes de registrar una sesión."
+          action={
+            <Link
+              href="/clients/new"
+              className="bg-primary inline-flex h-10 items-center rounded-lg px-4 text-sm font-semibold text-white hover:opacity-90"
+            >
+              Crear cliente
+            </Link>
+          }
+        />
+      )}
+      {!workout && noExercises && (
+        <div className="mt-4">
+          <EmptyState
+            title="Aún no hay ejercicios disponibles"
+            description="Crea el primer ejercicio para poder componer una sesión."
+            action={
+              <Link
+                href="/exercises/new"
+                className="bg-primary inline-flex h-10 items-center rounded-lg px-4 text-sm font-semibold text-white hover:opacity-90"
+              >
+                Crear ejercicio
+              </Link>
+            }
+          />
+        </div>
+      )}
       <form onSubmit={form.handleSubmit(onSubmit)} className="mt-5 space-y-5">
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(32,23,67,0.05)]">
           <p className="text-primary text-xs font-bold tracking-[0.16em] uppercase">
@@ -189,7 +236,7 @@ export function WorkoutForm({ workout }: { workout?: WorkoutSession }) {
             <Field label="Cliente">
               <select
                 {...form.register("clientId")}
-                disabled={Boolean(workout)}
+                disabled={Boolean(workout) || noClients}
                 className={inputClass}
               >
                 <option value="">Seleccionar cliente</option>
@@ -244,6 +291,7 @@ export function WorkoutForm({ workout }: { workout?: WorkoutSession }) {
                       exerciseId: event.target.value,
                     })
                   }
+                  disabled={noExercises}
                   className="focus:border-primary h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold outline-none sm:min-w-56 sm:w-auto"
                 >
                   <option value="">
@@ -455,7 +503,10 @@ export function WorkoutForm({ workout }: { workout?: WorkoutSession }) {
           >
             Cancelar
           </Link>
-          <Button type="submit" disabled={mutation.isPending}>
+          <Button
+            type="submit"
+            disabled={mutation.isPending || !dependenciesReady}
+          >
             <Save size={16} />
             {mutation.isPending
               ? "Guardando…"

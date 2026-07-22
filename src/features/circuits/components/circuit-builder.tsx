@@ -9,6 +9,7 @@ import { type Resolver, useForm } from "react-hook-form";
 import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { EmptyState } from "@/components/shared/empty-state";
 import { circuitStatusLabel } from "@/features/circuits/circuit-labels";
 import {
   circuitInputSchema,
@@ -94,8 +95,16 @@ export function CircuitBuilder({ circuit }: { circuit?: CircuitDetail }) {
     queryKey: ["circuit-exercise-options"],
     queryFn: () => exerciseApi.list(new URLSearchParams({ limit: "50" })),
   });
+  const noExercises =
+    exerciseOptions.isSuccess && exerciseOptions.data.items.length === 0;
+  const canSave =
+    exerciseOptions.isSuccess && exerciseOptions.data.items.length > 0;
   const mutation = useMutation({
     mutationFn: (values: HeaderValues) => {
+      if (noExercises)
+        throw new Error(
+          "Crea al menos un ejercicio antes de guardar un circuito.",
+        );
       const payload = { ...values, exercises };
       const parsed = circuit
         ? circuitVersionInputSchema.safeParse({
@@ -135,6 +144,22 @@ export function CircuitBuilder({ circuit }: { circuit?: CircuitDetail }) {
       >
         <ArrowLeft size={16} /> Volver a circuitos
       </Link>
+      {noExercises && (
+        <div className="mt-5">
+          <EmptyState
+            title="Aún no hay ejercicios disponibles"
+            description="El circuito necesita al menos un ejercicio de la biblioteca."
+            action={
+              <Link
+                href="/exercises/new"
+                className="bg-primary inline-flex h-10 items-center rounded-lg px-4 text-sm font-semibold text-white hover:opacity-90"
+              >
+                Crear ejercicio
+              </Link>
+            }
+          />
+        </div>
+      )}
       <form
         onSubmit={form.handleSubmit((values) =>
           mutation.mutate(values, {
@@ -229,6 +254,7 @@ export function CircuitBuilder({ circuit }: { circuit?: CircuitDetail }) {
                     onChange={(event) =>
                       updateEntry(index, { exerciseId: event.target.value })
                     }
+                    disabled={noExercises}
                     className={inputClass}
                   >
                     <option value="">
@@ -323,7 +349,7 @@ export function CircuitBuilder({ circuit }: { circuit?: CircuitDetail }) {
           </p>
         )}
         <div className="flex justify-end">
-          <Button type="submit" disabled={mutation.isPending}>
+          <Button type="submit" disabled={mutation.isPending || !canSave}>
             <Save size={16} />
             {mutation.isPending
               ? "Guardando…"

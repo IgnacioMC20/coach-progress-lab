@@ -266,8 +266,26 @@ export function ExercisesLibrary() {
           </div>
         ) : (
           <EmptyState
-            title="No hay ejercicios para este filtro"
-            description="Crea un ejercicio o cambia los filtros de búsqueda."
+            title={
+              !search && equipment === "ALL" && pattern === "ALL"
+                ? "Aún no hay ejercicios"
+                : "No hay ejercicios para este filtro"
+            }
+            description={
+              !search && equipment === "ALL" && pattern === "ALL"
+                ? "Crea el primer movimiento para habilitar rutinas, circuitos y entrenamientos."
+                : "Crea un ejercicio o cambia los filtros de búsqueda."
+            }
+            action={
+              !search && equipment === "ALL" && pattern === "ALL" ? (
+                <Link
+                  href="/exercises/new"
+                  className={cn(buttonVariants(), "gap-2")}
+                >
+                  <Plus size={16} /> Crear ejercicio
+                </Link>
+              ) : undefined
+            }
           />
         )}
       </div>

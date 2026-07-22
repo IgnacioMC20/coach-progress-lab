@@ -225,8 +225,26 @@ export function RoutinesLibrary() {
           </div>
         ) : (
           <EmptyState
-            title="No hay rutinas para este filtro"
-            description="Crea una plantilla o cambia los filtros de búsqueda."
+            title={
+              !search && status === "ALL"
+                ? "Aún no hay rutinas"
+                : "No hay rutinas para este filtro"
+            }
+            description={
+              !search && status === "ALL"
+                ? "Crea una plantilla después de preparar al menos un ejercicio."
+                : "Crea una plantilla o cambia los filtros de búsqueda."
+            }
+            action={
+              !search && status === "ALL" ? (
+                <Link
+                  href="/routines/new"
+                  className={cn(buttonVariants(), "gap-2")}
+                >
+                  <Plus size={16} /> Crear rutina
+                </Link>
+              ) : undefined
+            }
           />
         )}
       </div>

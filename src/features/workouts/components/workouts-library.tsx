@@ -134,6 +134,7 @@ export function WorkoutsLibrary() {
     queryKey: ["workouts", params.toString()],
     queryFn: () => workoutApi.list(params),
   });
+  const noClients = clients.isSuccess && clients.data.items.length === 0;
   const label = new Intl.DateTimeFormat("es", {
     day: "numeric",
     month: "short",
@@ -276,8 +277,24 @@ export function WorkoutsLibrary() {
           </div>
         ) : (
           <EmptyState
-            title="No hay sesiones esta semana"
-            description="Registra una nueva sesión o cambia el periodo seleccionado."
+            title={
+              noClients ? "Aún no hay clientes" : "No hay sesiones esta semana"
+            }
+            description={
+              noClients
+                ? "Crea un perfil de cliente antes de registrar entrenamientos."
+                : "Registra una nueva sesión o cambia el periodo seleccionado."
+            }
+            action={
+              noClients ? (
+                <Link
+                  href="/clients/new"
+                  className={cn(buttonVariants(), "gap-2")}
+                >
+                  Crear cliente
+                </Link>
+              ) : undefined
+            }
           />
         )}
       </div>

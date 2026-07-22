@@ -95,6 +95,14 @@ export function ProgressDashboard() {
         <EmptyState
           title="Aún no hay clientes activos"
           description="Crea o reactiva un cliente para empezar a seguir su progreso."
+          action={
+            <Link
+              href="/clients/new"
+              className="bg-primary inline-flex h-10 items-center rounded-lg px-4 text-sm font-semibold text-white hover:opacity-90"
+            >
+              Crear cliente
+            </Link>
+          }
         />
       </div>
     );

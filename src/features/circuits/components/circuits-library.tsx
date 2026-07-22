@@ -147,17 +147,27 @@ export function CircuitsLibrary() {
       ) : (
         <div className="mt-6">
           <EmptyState
-            title="Todavía no hay circuitos"
-            description="Crea un circuito reutilizable desde esta biblioteca."
+            title={
+              !query && !status
+                ? "Aún no hay circuitos"
+                : "No hay circuitos para este filtro"
+            }
+            description={
+              !query && !status
+                ? "Crea un circuito después de preparar al menos un ejercicio."
+                : "Crea un circuito o cambia los filtros de búsqueda."
+            }
+            action={
+              !query && !status ? (
+                <Link
+                  href="/circuits/new"
+                  className="bg-primary inline-flex h-10 items-center gap-2 rounded-lg px-4 text-sm font-semibold text-white hover:opacity-90"
+                >
+                  <Plus size={16} /> Crear circuito
+                </Link>
+              ) : undefined
+            }
           />
-          <div className="mt-4 text-center">
-            <Link
-              href="/circuits/new"
-              className="bg-primary inline-flex h-10 items-center gap-2 rounded-lg px-4 text-sm font-semibold text-white hover:opacity-90"
-            >
-              <Plus size={16} /> Crear circuito
-            </Link>
-          </div>
         </div>
       )}
     </section>
