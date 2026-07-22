@@ -16,7 +16,8 @@ type ListInput = {
   page: number;
   limit: number;
 };
-const notFound = () => new ApiError("NOT_FOUND", "Check-in not found", 404);
+const notFound = () =>
+  new ApiError("NOT_FOUND", "No encontramos el check-in.", 404);
 
 function average(
   records: CheckInRecord[],
@@ -28,7 +29,9 @@ function average(
   });
   if (!values.length) return null;
   return Number(
-    (values.reduce((total, value) => total + value, 0) / values.length).toFixed(1),
+    (values.reduce((total, value) => total + value, 0) / values.length).toFixed(
+      1,
+    ),
   );
 }
 
@@ -63,7 +66,11 @@ export const checkInService = {
         : {}),
     };
     const [records, total, trendRecords] = await Promise.all([
-      checkInRepository.findMany(where, (input.page - 1) * input.limit, input.limit),
+      checkInRepository.findMany(
+        where,
+        (input.page - 1) * input.limit,
+        input.limit,
+      ),
       checkInRepository.count(where),
       checkInRepository.findMany(where, 0, 52, "asc"),
     ]);
@@ -95,11 +102,11 @@ export const checkInService = {
     if (!organization)
       throw new ApiError(
         "SETUP_REQUIRED",
-        "An organization is required before creating check-ins",
+        "Configura una organización antes de crear check-ins.",
         409,
       );
     if (!(await checkInRepository.findClient(input.clientId, organization.id)))
-      throw new ApiError("NOT_FOUND", "Client not found", 404);
+      throw new ApiError("NOT_FOUND", "No encontramos el cliente.", 404);
     return toCheckInDto(await checkInRepository.create(input, organization.id));
   },
   async update(id: string, input: CheckInUpdate) {

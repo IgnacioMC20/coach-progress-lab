@@ -7,7 +7,9 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { FormAlert, FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/toast";
 import { TermTooltip } from "@/components/shared/term-tooltip";
 import { clientInputSchema } from "@/features/clients/schemas/client.schema";
 import { clientApi } from "@/features/clients/services/client-api";
@@ -16,6 +18,7 @@ import type {
   ClientStatus,
   TrainingLevel,
 } from "@/features/clients/types/client";
+import { applyApiError } from "@/lib/form-errors";
 
 type ClientFormValues = {
   firstName: string;
@@ -33,25 +36,6 @@ type ClientFormValues = {
 };
 const inputClass =
   "h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15";
-function Field({
-  label,
-  error,
-  children,
-}: {
-  label: string;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="grid gap-1.5 text-sm font-semibold text-slate-700">
-      <span>{label}</span>
-      {children}
-      {error && (
-        <span className="text-xs font-medium text-rose-600">{error}</span>
-      )}
-    </label>
-  );
-}
 function asDefaultValues(client?: Client): ClientFormValues {
   return {
     firstName: client?.firstName ?? "",
@@ -71,10 +55,15 @@ function asDefaultValues(client?: Client): ClientFormValues {
 export function ClientForm({ client }: { client?: Client }) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const form = useForm<ClientFormValues>({
-    resolver: zodResolver(clientInputSchema) as Resolver<ClientFormValues>,
+    resolver: zodResolver(clientInputSchema, undefined, {
+      raw: true,
+    }) as Resolver<ClientFormValues>,
     defaultValues: asDefaultValues(client),
     mode: "onBlur",
+    reValidateMode: "onChange",
+    shouldFocusError: true,
   });
   const mutation = useMutation({
     mutationFn: (values: ClientFormValues) =>
@@ -82,14 +71,26 @@ export function ClientForm({ client }: { client?: Client }) {
     onSuccess: (saved) => {
       void queryClient.invalidateQueries({ queryKey: ["clients"] });
       void queryClient.invalidateQueries({ queryKey: ["client", saved.id] });
+      toast.success(
+        client ? "Cambios guardados" : "Cliente creado",
+        saved.fullName,
+      );
       router.push(`/clients/${saved.id}`);
       router.refresh();
     },
   });
   const onSubmit = (values: ClientFormValues) =>
     mutation.mutate(values, {
-      onError: (error) => form.setError("root", { message: error.message }),
+      onError: (error) => {
+        const message = applyApiError(error, form.setError);
+        toast.error("No pudimos guardar el cliente", message);
+      },
     });
+  const onInvalid = () =>
+    toast.error(
+      "Revisa los campos marcados",
+      "Corrige los errores antes de guardar.",
+    );
   const numberValue = {
     setValueAs: (value: string) => (value === "" ? undefined : Number(value)),
   };
@@ -115,10 +116,20 @@ export function ClientForm({ client }: { client?: Client }) {
             <TermTooltip term="IMC" /> desde el perfil.
           </p>
         </div>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="p-6">
+        <form
+          onSubmit={form.handleSubmit(onSubmit, onInvalid)}
+          className="p-6"
+          noValidate
+        >
+          <p className="mb-5 text-sm text-slate-500">
+            Los campos indican si son obligatorios u opcionales.
+          </p>
           <div className="grid gap-5 md:grid-cols-2">
-            <Field
+            <FormField
+              name="firstName"
               label="Nombre"
+              required
+              hint="Entre 2 y 80 caracteres."
               error={form.formState.errors.firstName?.message}
             >
               <Input
@@ -126,9 +137,12 @@ export function ClientForm({ client }: { client?: Client }) {
                 className={inputClass}
                 placeholder="Ej. Ligia"
               />
-            </Field>
-            <Field
+            </FormField>
+            <FormField
+              name="lastName"
               label="Apellido"
+              required
+              hint="Entre 2 y 80 caracteres."
               error={form.formState.errors.lastName?.message}
             >
               <Input
@@ -136,9 +150,11 @@ export function ClientForm({ client }: { client?: Client }) {
                 className={inputClass}
                 placeholder="Ej. Morales"
               />
-            </Field>
-            <Field
+            </FormField>
+            <FormField
+              name="email"
               label="Correo electrónico"
+              hint="Ejemplo: cliente@email.com."
               error={form.formState.errors.email?.message}
             >
               <Input
@@ -147,8 +163,9 @@ export function ClientForm({ client }: { client?: Client }) {
                 type="email"
                 placeholder="cliente@email.com"
               />
-            </Field>
-            <Field
+            </FormField>
+            <FormField
+              name="phone"
               label="Teléfono"
               error={form.formState.errors.phone?.message}
             >
@@ -157,8 +174,9 @@ export function ClientForm({ client }: { client?: Client }) {
                 className={inputClass}
                 placeholder="+502 0000 0000"
               />
-            </Field>
-            <Field
+            </FormField>
+            <FormField
+              name="birthDate"
               label="Fecha de nacimiento"
               error={form.formState.errors.birthDate?.message}
             >
@@ -167,9 +185,11 @@ export function ClientForm({ client }: { client?: Client }) {
                 className={inputClass}
                 type="date"
               />
-            </Field>
-            <Field
+            </FormField>
+            <FormField
+              name="heightCm"
               label="Estatura (cm)"
+              hint="Valor permitido: 80 a 250 cm."
               error={form.formState.errors.heightCm?.message}
             >
               <Input
@@ -180,8 +200,9 @@ export function ClientForm({ client }: { client?: Client }) {
                 max="250"
                 placeholder="165"
               />
-            </Field>
-            <Field
+            </FormField>
+            <FormField
+              name="primaryGoal"
               label="Objetivo principal"
               error={form.formState.errors.primaryGoal?.message}
             >
@@ -190,8 +211,8 @@ export function ClientForm({ client }: { client?: Client }) {
                 className={inputClass}
                 placeholder="Ej. Hipertrofia"
               />
-            </Field>
-            <Field label="Nivel">
+            </FormField>
+            <FormField name="trainingLevel" label="Nivel">
               <select
                 {...form.register("trainingLevel")}
                 className={inputClass}
@@ -201,16 +222,18 @@ export function ClientForm({ client }: { client?: Client }) {
                 <option value="INTERMEDIATE">Intermedio</option>
                 <option value="ADVANCED">Experto</option>
               </select>
-            </Field>
-            <Field label="Programa actual">
+            </FormField>
+            <FormField name="currentProgram" label="Programa actual">
               <Input
                 {...form.register("currentProgram")}
                 className={inputClass}
                 placeholder="Ej. Hipertrofia 12 semanas"
               />
-            </Field>
-            <Field
+            </FormField>
+            <FormField
+              name="currentWeek"
               label="Semana actual"
+              hint="Número entero entre 1 y 104."
               error={form.formState.errors.currentWeek?.message}
             >
               <Input
@@ -221,28 +244,32 @@ export function ClientForm({ client }: { client?: Client }) {
                 max="104"
                 placeholder="1"
               />
-            </Field>
-            <Field label="Estado">
+            </FormField>
+            <FormField name="status" label="Estado" required>
               <select {...form.register("status")} className={inputClass}>
                 <option value="ACTIVE">Activo</option>
                 <option value="PAUSED">Pausado</option>
                 <option value="COMPLETED">Finalizado</option>
                 <option value="ARCHIVED">Archivado</option>
               </select>
-            </Field>
+            </FormField>
           </div>
-          <Field label="Notas" error={form.formState.errors.notes?.message}>
+          <FormField
+            name="notes"
+            label="Notas"
+            hint="Máximo 2,000 caracteres."
+            error={form.formState.errors.notes?.message}
+            className="mt-5"
+          >
             <textarea
               {...form.register("notes")}
               className="focus:border-primary focus:ring-primary/15 mt-1 min-h-25 w-full rounded-lg border border-slate-200 p-3 text-sm outline-none focus:ring-2"
               placeholder="Contexto relevante del cliente, restricciones o preferencias."
             />
-          </Field>
-          {form.formState.errors.root && (
-            <p role="alert" className="mt-4 text-sm font-medium text-rose-600">
-              {form.formState.errors.root.message}
-            </p>
-          )}
+          </FormField>
+          <div className="mt-4">
+            <FormAlert message={form.formState.errors.root?.server?.message} />
+          </div>
           <div className="mt-6 flex justify-end gap-3">
             <Link
               href={client ? `/clients/${client.id}` : "/clients"}

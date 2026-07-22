@@ -3,18 +3,19 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { type Resolver, useForm } from "react-hook-form";
 import { ArrowLeft, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FormAlert, FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/toast";
 import { EmptyState } from "@/components/shared/empty-state";
 import { clientApi } from "@/features/clients/services/client-api";
-import {
-  checkInInputSchema,
-  checkInUpdateSchema,
-} from "@/features/check-ins/schemas/check-in.schema";
+import { checkInInputSchema } from "@/features/check-ins/schemas/check-in.schema";
 import { checkInApi } from "@/features/check-ins/services/check-in-api";
 import type { CheckIn } from "@/features/check-ins/types/check-in";
+import { applyApiError } from "@/lib/form-errors";
 
 type CheckInFormValues = {
   clientId: string;
@@ -36,25 +37,14 @@ const inputClass =
 const numberValue = {
   setValueAs: (value: string) => (value === "" ? undefined : Number(value)),
 };
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="grid gap-1.5 text-sm font-semibold text-slate-700">
-      <span>{label}</span>
-      {children}
-    </label>
-  );
-}
-
 export function CheckInForm({ checkIn }: { checkIn?: CheckIn }) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const form = useForm<CheckInFormValues>({
+    resolver: zodResolver(checkInInputSchema, undefined, {
+      raw: true,
+    }) as Resolver<CheckInFormValues>,
     defaultValues: checkIn
       ? {
           clientId: checkIn.clientId,
@@ -71,6 +61,9 @@ export function CheckInForm({ checkIn }: { checkIn?: CheckIn }) {
           notes: checkIn.notes ?? "",
         }
       : { clientId: "", checkInDate: new Date().toISOString().slice(0, 10) },
+    mode: "onBlur",
+    reValidateMode: "onChange",
+    shouldFocusError: true,
   });
   const clients = useQuery({
     queryKey: ["check-in-form-clients"],
@@ -86,19 +79,13 @@ export function CheckInForm({ checkIn }: { checkIn?: CheckIn }) {
         throw new Error(
           "Crea al menos un cliente antes de registrar un check-in.",
         );
-      const parsed = checkIn
-        ? checkInUpdateSchema.safeParse(values)
-        : checkInInputSchema.safeParse(values);
-      if (!parsed.success)
-        throw new Error(
-          parsed.error.issues[0]?.message ?? "Revisa los datos del check-in",
-        );
       return checkIn
-        ? checkInApi.update(checkIn.id, parsed.data)
-        : checkInApi.create(parsed.data);
+        ? checkInApi.update(checkIn.id, values)
+        : checkInApi.create(values);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["check-ins"] });
+      toast.success(checkIn ? "Check-in actualizado" : "Check-in guardado");
       router.push("/check-ins");
       router.refresh();
     },
@@ -127,13 +114,22 @@ export function CheckInForm({ checkIn }: { checkIn?: CheckIn }) {
         />
       )}
       <form
-        onSubmit={form.handleSubmit((values) =>
-          mutation.mutate(values, {
-            onError: (error) =>
-              form.setError("root", { message: error.message }),
-          }),
+        onSubmit={form.handleSubmit(
+          (values) =>
+            mutation.mutate(values, {
+              onError: (error) => {
+                const message = applyApiError(error, form.setError);
+                toast.error("No pudimos guardar el check-in", message);
+              },
+            }),
+          () =>
+            toast.error(
+              "Revisa los campos marcados",
+              "Corrige los errores antes de guardar.",
+            ),
         )}
         className="mt-5 space-y-5"
+        noValidate
       >
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(32,23,67,0.05)]">
           <p className="text-primary text-xs font-bold tracking-[0.16em] uppercase">
@@ -145,8 +141,16 @@ export function CheckInForm({ checkIn }: { checkIn?: CheckIn }) {
           <p className="mt-1 text-sm text-slate-500">
             Registra medidas, recuperación y adherencia de la última semana.
           </p>
+          <p className="mt-3 text-xs text-slate-500">
+            Los campos indican si son obligatorios u opcionales.
+          </p>
           <div className="mt-6 grid gap-5 md:grid-cols-2">
-            <Field label="Cliente">
+            <FormField
+              name="clientId"
+              label="Cliente"
+              required
+              error={form.formState.errors.clientId?.message}
+            >
               <select
                 {...form.register("clientId")}
                 disabled={Boolean(checkIn) || noClients}
@@ -159,14 +163,19 @@ export function CheckInForm({ checkIn }: { checkIn?: CheckIn }) {
                   </option>
                 ))}
               </select>
-            </Field>
-            <Field label="Fecha del check-in">
+            </FormField>
+            <FormField
+              name="checkInDate"
+              label="Fecha del check-in"
+              required
+              error={form.formState.errors.checkInDate?.message}
+            >
               <Input
                 {...form.register("checkInDate")}
                 className={inputClass}
                 type="date"
               />
-            </Field>
+            </FormField>
           </div>
         </div>
 
@@ -177,35 +186,55 @@ export function CheckInForm({ checkIn }: { checkIn?: CheckIn }) {
               Todos los campos son opcionales.
             </p>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <Field label="Peso (kg)">
+              <FormField
+                name="weightKg"
+                label="Peso (kg)"
+                hint="Entre 20 y 400 kg."
+                error={form.formState.errors.weightKg?.message}
+              >
                 <Input
                   {...form.register("weightKg", numberValue)}
                   type="number"
                   step="0.1"
                   min="20"
                 />
-              </Field>
-              <Field label="Pecho (cm)">
+              </FormField>
+              <FormField
+                name="chestCm"
+                label="Pecho (cm)"
+                hint="Entre 30 y 250 cm."
+                error={form.formState.errors.chestCm?.message}
+              >
                 <Input
                   {...form.register("chestCm", numberValue)}
                   type="number"
                   step="0.1"
                 />
-              </Field>
-              <Field label="Cintura (cm)">
+              </FormField>
+              <FormField
+                name="waistCm"
+                label="Cintura (cm)"
+                hint="Entre 30 y 250 cm."
+                error={form.formState.errors.waistCm?.message}
+              >
                 <Input
                   {...form.register("waistCm", numberValue)}
                   type="number"
                   step="0.1"
                 />
-              </Field>
-              <Field label="Cadera (cm)">
+              </FormField>
+              <FormField
+                name="hipCm"
+                label="Cadera (cm)"
+                hint="Entre 30 y 250 cm."
+                error={form.formState.errors.hipCm?.message}
+              >
                 <Input
                   {...form.register("hipCm", numberValue)}
                   type="number"
                   step="0.1"
                 />
-              </Field>
+              </FormField>
             </div>
           </section>
 
@@ -215,7 +244,12 @@ export function CheckInForm({ checkIn }: { checkIn?: CheckIn }) {
               Escalas de 1 a 5, salvo adherencia.
             </p>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <Field label="Sueño (horas)">
+              <FormField
+                name="sleepHours"
+                label="Sueño (horas)"
+                hint="Entre 0 y 24 horas."
+                error={form.formState.errors.sleepHours?.message}
+              >
                 <Input
                   {...form.register("sleepHours", numberValue)}
                   type="number"
@@ -223,59 +257,80 @@ export function CheckInForm({ checkIn }: { checkIn?: CheckIn }) {
                   min="0"
                   max="24"
                 />
-              </Field>
-              <Field label="Pasos diarios promedio">
+              </FormField>
+              <FormField
+                name="steps"
+                label="Pasos diarios promedio"
+                hint="Número entero entre 0 y 100,000."
+                error={form.formState.errors.steps?.message}
+              >
                 <Input
                   {...form.register("steps", numberValue)}
                   type="number"
                   min="0"
                   step="100"
                 />
-              </Field>
-              <Field label="Energía (1–5)">
+              </FormField>
+              <FormField
+                name="energyLevel"
+                label="Energía (1–5)"
+                hint="Escala entera del 1 al 5."
+                error={form.formState.errors.energyLevel?.message}
+              >
                 <Input
                   {...form.register("energyLevel", numberValue)}
                   type="number"
                   min="1"
                   max="5"
                 />
-              </Field>
-              <Field label="Hambre (1–5)">
+              </FormField>
+              <FormField
+                name="hungerLevel"
+                label="Hambre (1–5)"
+                hint="Escala entera del 1 al 5."
+                error={form.formState.errors.hungerLevel?.message}
+              >
                 <Input
                   {...form.register("hungerLevel", numberValue)}
                   type="number"
                   min="1"
                   max="5"
                 />
-              </Field>
+              </FormField>
               <div className="sm:col-span-2">
-                <Field label="Adherencia nutricional (%)">
+                <FormField
+                  name="nutritionAdherence"
+                  label="Adherencia nutricional (%)"
+                  hint="Número entero entre 0 y 100."
+                  error={form.formState.errors.nutritionAdherence?.message}
+                >
                   <Input
                     {...form.register("nutritionAdherence", numberValue)}
                     type="number"
                     min="0"
                     max="100"
                   />
-                </Field>
+                </FormField>
               </div>
             </div>
           </section>
         </div>
 
         <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_8px_24px_rgba(32,23,67,0.035)]">
-          <Field label="Observaciones">
+          <FormField
+            name="notes"
+            label="Observaciones"
+            hint="Máximo 2,000 caracteres."
+            error={form.formState.errors.notes?.message}
+          >
             <textarea
               {...form.register("notes")}
               className="focus:border-primary focus:ring-primary/15 min-h-28 rounded-lg border border-slate-200 p-3 text-sm outline-none focus:ring-2"
               placeholder="Cambios, dificultades, molestias o contexto relevante de la semana."
             />
-          </Field>
+          </FormField>
         </section>
-        {form.formState.errors.root && (
-          <p role="alert" className="text-sm font-medium text-rose-600">
-            {form.formState.errors.root.message}
-          </p>
-        )}
+        <FormAlert message={form.formState.errors.root?.server?.message} />
         <div className="flex justify-end gap-3">
           <Link
             href="/check-ins"

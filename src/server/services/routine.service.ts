@@ -19,7 +19,8 @@ type ListInput = {
   limit: number;
 };
 
-const notFound = () => new ApiError("NOT_FOUND", "Routine not found", 404);
+const notFound = () =>
+  new ApiError("NOT_FOUND", "No encontramos la rutina.", 404);
 
 function exerciseIds(input: Pick<RoutineVersionInput, "days">) {
   return input.days.flatMap((day) =>
@@ -97,7 +98,7 @@ export const routineService = {
     if (exercises.length !== ids.length)
       throw new ApiError(
         "VALIDATION_ERROR",
-        "One or more exercises are unavailable",
+        "Uno o más ejercicios no están disponibles.",
         400,
       );
   },
@@ -106,7 +107,7 @@ export const routineService = {
     if (!organization)
       throw new ApiError(
         "SETUP_REQUIRED",
-        "An organization is required before creating routines",
+        "Configura una organización antes de crear rutinas.",
         409,
       );
     await this.validateExercises(input, organization.id);
@@ -131,18 +132,19 @@ export const routineService = {
     if (routine.status === "ARCHIVED")
       throw new ApiError(
         "VALIDATION_ERROR",
-        "Archived routines cannot be assigned",
+        "No puedes asignar una rutina archivada.",
         400,
       );
     const [client, version] = await Promise.all([
       routineRepository.findClient(input.clientId, routine.organizationId),
       routineRepository.findVersion(id, input.routineVersionId),
     ]);
-    if (!client) throw new ApiError("NOT_FOUND", "Client not found", 404);
+    if (!client)
+      throw new ApiError("NOT_FOUND", "No encontramos el cliente.", 404);
     if (!version)
       throw new ApiError(
         "VALIDATION_ERROR",
-        "Routine version is unavailable",
+        "La versión de la rutina no está disponible.",
         400,
       );
     const assignment = await routineRepository.assign(id, input);
@@ -158,7 +160,11 @@ export const routineService = {
   },
   async updateAssignment(id: string, input: RoutineAssignmentUpdate) {
     if (!(await routineRepository.findAssignment(id)))
-      throw new ApiError("NOT_FOUND", "Routine assignment not found", 404);
+      throw new ApiError(
+        "NOT_FOUND",
+        "No encontramos la asignación de rutina.",
+        404,
+      );
     const assignment = await routineRepository.updateAssignment(id, input);
     return {
       id: assignment.id,

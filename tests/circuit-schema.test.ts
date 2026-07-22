@@ -29,12 +29,17 @@ describe("circuit schemas", () => {
   });
 
   it("requires a prescription and at least one exercise in every version", () => {
-    expect(() =>
-      circuitVersionInputSchema.parse({
-        rounds: 3,
-        exercises: [{ exerciseId: "6a557679db9cc80c27e65c58" }],
-      }),
-    ).toThrow();
+    const prescription = circuitVersionInputSchema.safeParse({
+      rounds: 3,
+      exercises: [{ exerciseId: "6a557679db9cc80c27e65c58" }],
+    });
+    expect(prescription.success).toBe(false);
+    if (!prescription.success)
+      expect(prescription.error.issues[0]?.path).toEqual([
+        "exercises",
+        0,
+        "reps",
+      ]);
     expect(() =>
       circuitVersionInputSchema.parse({ rounds: 3, exercises: [] }),
     ).toThrow();

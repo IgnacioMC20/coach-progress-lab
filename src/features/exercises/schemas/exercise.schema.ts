@@ -1,71 +1,82 @@
 import { z } from "zod";
 import { objectIdSchema } from "@/features/clients/schemas/client.schema";
 
-export const measurementTypeSchema = z.enum([
-  "WEIGHT_REPS",
-  "BODYWEIGHT_REPS",
-  "DURATION",
-  "DISTANCE",
-]);
-export const equipmentTypeSchema = z.enum([
-  "BARBELL",
-  "DUMBBELL",
-  "KETTLEBELL",
-  "MACHINE",
-  "CABLE",
-  "BAND",
-  "BODYWEIGHT",
-  "OTHER",
-]);
-export const muscleGroupSchema = z.enum([
-  "CHEST",
-  "BACK",
-  "SHOULDERS",
-  "BICEPS",
-  "TRICEPS",
-  "QUADRICEPS",
-  "HAMSTRINGS",
-  "GLUTES",
-  "CALVES",
-  "CORE",
-  "FULL_BODY",
-]);
-export const movementPatternSchema = z.enum([
-  "SQUAT",
-  "HINGE",
-  "HORIZONTAL_PUSH",
-  "VERTICAL_PUSH",
-  "HORIZONTAL_PULL",
-  "VERTICAL_PULL",
-  "LUNGE",
-  "CARRY",
-  "ROTATION",
-  "ISOLATION",
-]);
-export const progressionPolicySchema = z.enum([
-  "DOUBLE_PROGRESSION",
-  "LOAD_FIRST",
-  "REPETITIONS_FIRST",
-  "RIR_BASED",
-]);
+export const measurementTypeSchema = z.enum(
+  ["WEIGHT_REPS", "BODYWEIGHT_REPS", "DURATION", "DISTANCE"],
+  { error: "Selecciona un tipo de medición" },
+);
+export const equipmentTypeSchema = z.enum(
+  [
+    "BARBELL",
+    "DUMBBELL",
+    "KETTLEBELL",
+    "MACHINE",
+    "CABLE",
+    "BAND",
+    "BODYWEIGHT",
+    "OTHER",
+  ],
+  { error: "Selecciona un tipo de equipo" },
+);
+export const muscleGroupSchema = z.enum(
+  [
+    "CHEST",
+    "BACK",
+    "SHOULDERS",
+    "BICEPS",
+    "TRICEPS",
+    "QUADRICEPS",
+    "HAMSTRINGS",
+    "GLUTES",
+    "CALVES",
+    "CORE",
+    "FULL_BODY",
+  ],
+  { error: "Selecciona un grupo muscular válido" },
+);
+export const movementPatternSchema = z.enum(
+  [
+    "SQUAT",
+    "HINGE",
+    "HORIZONTAL_PUSH",
+    "VERTICAL_PUSH",
+    "HORIZONTAL_PULL",
+    "VERTICAL_PULL",
+    "LUNGE",
+    "CARRY",
+    "ROTATION",
+    "ISOLATION",
+  ],
+  { error: "Selecciona un patrón de movimiento" },
+);
+export const progressionPolicySchema = z.enum(
+  ["DOUBLE_PROGRESSION", "LOAD_FIRST", "REPETITIONS_FIRST", "RIR_BASED"],
+  { error: "Selecciona una política de progresión" },
+);
 
 const optionalText = z
   .string()
   .trim()
-  .max(2_000)
+  .max(2_000, "No puede superar 2,000 caracteres")
   .optional()
   .transform((value) => value || undefined);
 const minimumIncrementSchema = z
   .union([z.coerce.number().finite(), z.literal("")])
   .optional()
-  .transform((value) => (value === "" || value === undefined ? undefined : value))
+  .transform((value) =>
+    value === "" || value === undefined ? undefined : value,
+  )
   .refine(
     (value) => value === undefined || (value > 0 && value <= 100),
     "El incremento mínimo debe ser mayor que 0 y menor o igual a 100",
   );
 
 export const exerciseInputSchema = z.object({
-  name: z.string().trim().min(2).max(120),
+  name: z
+    .string()
+    .trim()
+    .min(2, "Escribe un nombre de al menos 2 caracteres")
+    .max(120, "El nombre no puede superar 120 caracteres"),
   description: optionalText,
   measurementType: measurementTypeSchema,
   equipment: equipmentTypeSchema,
@@ -79,11 +90,19 @@ export const exerciseInputSchema = z.object({
   substituteIds: z
     .array(objectIdSchema)
     .default([])
-    .refine((ids) => new Set(ids).size === ids.length, "No repitas sustituciones"),
+    .refine(
+      (ids) => new Set(ids).size === ids.length,
+      "No repitas sustituciones",
+    ),
 });
 
 export const exerciseUpdateSchema = z.object({
-  name: z.string().trim().min(2).max(120).optional(),
+  name: z
+    .string()
+    .trim()
+    .min(2, "Escribe un nombre de al menos 2 caracteres")
+    .max(120, "El nombre no puede superar 120 caracteres")
+    .optional(),
   description: optionalText,
   measurementType: measurementTypeSchema.optional(),
   equipment: equipmentTypeSchema.optional(),
@@ -97,7 +116,10 @@ export const exerciseUpdateSchema = z.object({
   progressionPolicy: progressionPolicySchema.optional(),
   substituteIds: z
     .array(objectIdSchema)
-    .refine((ids) => new Set(ids).size === ids.length, "No repitas sustituciones")
+    .refine(
+      (ids) => new Set(ids).size === ids.length,
+      "No repitas sustituciones",
+    )
     .optional(),
 });
 export const listExercisesQuerySchema = z.object({

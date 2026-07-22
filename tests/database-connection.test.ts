@@ -13,7 +13,8 @@ describe("database connection errors", () => {
     await expect(response.json()).resolves.toEqual({
       error: {
         code: "DATABASE_UNAVAILABLE",
-        message: "Database temporarily unavailable",
+        message:
+          "La base de datos no está disponible temporalmente. Inténtalo de nuevo.",
       },
     });
   });
@@ -28,7 +29,7 @@ describe("database connection errors", () => {
     await expect(response.json()).resolves.toEqual({
       error: {
         code: "INTERNAL_ERROR",
-        message: "An unexpected error occurred",
+        message: "Ocurrió un error inesperado. Inténtalo de nuevo.",
       },
     });
     consoleError.mockRestore();

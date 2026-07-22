@@ -17,7 +17,8 @@ type ListInput = {
   page: number;
   limit: number;
 };
-const notFound = () => new ApiError("NOT_FOUND", "Circuit not found", 404);
+const notFound = () =>
+  new ApiError("NOT_FOUND", "No encontramos el circuito.", 404);
 
 function exerciseIds(input: Pick<CircuitVersionInput, "exercises">) {
   return [...new Set(input.exercises.map((exercise) => exercise.exerciseId))];
@@ -106,7 +107,7 @@ export const circuitService = {
     if (exercises.length !== ids.length)
       throw new ApiError(
         "VALIDATION_ERROR",
-        "One or more exercises are unavailable",
+        "Uno o más ejercicios no están disponibles.",
         400,
       );
   },
@@ -115,7 +116,7 @@ export const circuitService = {
     if (!organization)
       throw new ApiError(
         "SETUP_REQUIRED",
-        "An organization is required before creating circuits",
+        "Configura una organización antes de crear circuitos.",
         409,
       );
     await this.validateExercises(input, organization.id);
@@ -140,25 +141,30 @@ export const circuitService = {
     if (circuit.status === "ARCHIVED")
       throw new ApiError(
         "VALIDATION_ERROR",
-        "Archived circuits cannot be assigned",
+        "No puedes asignar un circuito archivado.",
         400,
       );
     const [client, version] = await Promise.all([
       circuitRepository.findClient(input.clientId, circuit.organizationId),
       circuitRepository.findVersion(id, input.circuitVersionId),
     ]);
-    if (!client) throw new ApiError("NOT_FOUND", "Client not found", 404);
+    if (!client)
+      throw new ApiError("NOT_FOUND", "No encontramos el cliente.", 404);
     if (!version)
       throw new ApiError(
         "VALIDATION_ERROR",
-        "Circuit version is unavailable",
+        "La versión del circuito no está disponible.",
         400,
       );
     return assignmentDto(await circuitRepository.assign(id, input));
   },
   async updateAssignment(id: string, input: CircuitAssignmentUpdate) {
     if (!(await circuitRepository.findAssignment(id)))
-      throw new ApiError("NOT_FOUND", "Circuit assignment not found", 404);
+      throw new ApiError(
+        "NOT_FOUND",
+        "No encontramos la asignación de circuito.",
+        404,
+      );
     return assignmentDto(await circuitRepository.updateAssignment(id, input));
   },
   async remove(id: string) {

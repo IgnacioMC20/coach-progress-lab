@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { type Resolver, useForm } from "react-hook-form";
+import { type Resolver, useFieldArray, useForm } from "react-hook-form";
 import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FormAlert, FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/toast";
 import { EmptyState } from "@/components/shared/empty-state";
 import { circuitStatusLabel } from "@/features/circuits/circuit-labels";
 import {
@@ -21,75 +22,78 @@ import type {
   CircuitStatus,
 } from "@/features/circuits/types/circuit";
 import { exerciseApi } from "@/features/exercises/services/exercise-api";
+import { applyApiError } from "@/lib/form-errors";
 
-type Entry = {
-  exerciseId: string;
-  reps?: number;
-  targetWeightKg?: number;
-  durationSeconds?: number;
-  notes?: string;
-};
-type HeaderValues = {
+type CircuitFormValues = {
   name: string;
   description?: string;
   status: CircuitStatus;
   rounds: number;
   restBetweenRoundsSeconds?: number;
   notes?: string;
+  exercises: Array<{
+    exerciseId: string;
+    reps?: number;
+    targetWeightKg?: number;
+    durationSeconds?: number;
+    notes?: string;
+  }>;
 };
-const inputClass =
-  "h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15";
-const number = (value: string) => (value === "" ? undefined : Number(value));
-const newEntry = (): Entry => ({ exerciseId: "", reps: 10 });
-const headerSchema = circuitInputSchema
-  .pick({ name: true, description: true, status: true })
-  .extend({
-    rounds: circuitVersionInputSchema.shape.rounds,
-    restBetweenRoundsSeconds:
-      circuitVersionInputSchema.shape.restBetweenRoundsSeconds,
-    notes: circuitVersionInputSchema.shape.notes,
-  });
 
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="grid gap-1.5 text-sm font-semibold text-slate-700">
-      <span>{label}</span>
-      {children}
-    </label>
-  );
+const inputClass =
+  "h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none transition aria-invalid:border-rose-400 aria-invalid:ring-2 aria-invalid:ring-rose-100 focus:border-primary focus:ring-2 focus:ring-primary/15";
+const numberValue = {
+  setValueAs: (value: string) => (value === "" ? undefined : Number(value)),
+};
+const newExercise = (): CircuitFormValues["exercises"][number] => ({
+  exerciseId: "",
+  reps: 10,
+  targetWeightKg: undefined,
+  durationSeconds: undefined,
+  notes: "",
+});
+
+function defaults(circuit?: CircuitDetail): CircuitFormValues {
+  const version = circuit?.currentVersion;
+  return {
+    name: circuit?.name ?? "",
+    description: circuit?.description ?? "",
+    status: circuit?.status ?? "DRAFT",
+    rounds: version?.rounds ?? 3,
+    restBetweenRoundsSeconds: version?.restBetweenRoundsSeconds ?? 60,
+    notes: version?.notes ?? "",
+    exercises: version?.exercises.map((exercise) => ({
+      exerciseId: exercise.exerciseId,
+      reps: exercise.reps ?? undefined,
+      targetWeightKg: exercise.targetWeightKg ?? undefined,
+      durationSeconds: exercise.durationSeconds ?? undefined,
+      notes: exercise.notes ?? "",
+    })) ?? [newExercise()],
+  };
+}
+
+function nestedMessage(error: unknown) {
+  return typeof error === "object" && error && "message" in error
+    ? String((error as { message?: unknown }).message ?? "")
+    : undefined;
 }
 
 export function CircuitBuilder({ circuit }: { circuit?: CircuitDetail }) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const version = circuit?.currentVersion;
-  const [exercises, setExercises] = useState<Entry[]>(() =>
-    version
-      ? version.exercises.map((exercise) => ({
-          exerciseId: exercise.exerciseId,
-          reps: exercise.reps ?? undefined,
-          targetWeightKg: exercise.targetWeightKg ?? undefined,
-          durationSeconds: exercise.durationSeconds ?? undefined,
-          notes: exercise.notes ?? "",
-        }))
-      : [newEntry()],
-  );
-  const form = useForm<HeaderValues>({
-    resolver: zodResolver(headerSchema) as Resolver<HeaderValues>,
-    defaultValues: {
-      name: circuit?.name ?? "",
-      description: circuit?.description ?? "",
-      status: circuit?.status ?? "DRAFT",
-      rounds: version?.rounds ?? 3,
-      restBetweenRoundsSeconds: version?.restBetweenRoundsSeconds ?? 60,
-      notes: version?.notes ?? "",
-    },
+  const toast = useToast();
+  const form = useForm<CircuitFormValues>({
+    resolver: zodResolver(circuitInputSchema, undefined, {
+      raw: true,
+    }) as Resolver<CircuitFormValues>,
+    defaultValues: defaults(circuit),
+    mode: "onBlur",
+    reValidateMode: "onChange",
+    shouldFocusError: true,
+  });
+  const exerciseFields = useFieldArray({
+    control: form.control,
+    name: "exercises",
   });
   const exerciseOptions = useQuery({
     queryKey: ["circuit-exercise-options"],
@@ -99,43 +103,47 @@ export function CircuitBuilder({ circuit }: { circuit?: CircuitDetail }) {
     exerciseOptions.isSuccess && exerciseOptions.data.items.length === 0;
   const canSave =
     exerciseOptions.isSuccess && exerciseOptions.data.items.length > 0;
+  const isVersion = Boolean(circuit);
+
   const mutation = useMutation({
-    mutationFn: (values: HeaderValues) => {
+    mutationFn: (values: CircuitFormValues) => {
       if (noExercises)
         throw new Error(
           "Crea al menos un ejercicio antes de guardar un circuito.",
         );
-      const payload = { ...values, exercises };
-      const parsed = circuit
-        ? circuitVersionInputSchema.safeParse({
-            rounds: values.rounds,
-            restBetweenRoundsSeconds: values.restBetweenRoundsSeconds,
-            notes: values.notes,
-            exercises,
-          })
-        : circuitInputSchema.safeParse(payload);
-      if (!parsed.success)
-        throw new Error(
-          parsed.error.issues[0]?.message ?? "Revisa el circuito",
-        );
-      return circuit
-        ? circuitApi.addVersion(circuit.id, parsed.data)
-        : circuitApi.create(parsed.data);
+      if (circuit) {
+        const versionValues = {
+          rounds: values.rounds,
+          restBetweenRoundsSeconds: values.restBetweenRoundsSeconds,
+          notes: values.notes,
+          exercises: values.exercises,
+        };
+        const parsed = circuitVersionInputSchema.safeParse(versionValues);
+        if (!parsed.success) throw parsed.error;
+        return circuitApi.addVersion(circuit.id, versionValues);
+      }
+      return circuitApi.create(values);
     },
     onSuccess: (saved) => {
       void queryClient.invalidateQueries({ queryKey: ["circuits"] });
       void queryClient.invalidateQueries({ queryKey: ["circuit", saved.id] });
+      toast.success(
+        isVersion ? "Nueva versión creada" : "Circuito creado",
+        saved.name,
+      );
       router.push(`/circuits/${saved.id}`);
       router.refresh();
     },
   });
-  const updateEntry = (index: number, patch: Partial<Entry>) =>
-    setExercises((current) =>
-      current.map((entry, entryIndex) =>
-        entryIndex === index ? { ...entry, ...patch } : entry,
-      ),
-    );
-  const isVersion = Boolean(circuit);
+
+  const submit = (values: CircuitFormValues) =>
+    mutation.mutate(values, {
+      onError: (error) => {
+        const message = applyApiError(error, form.setError);
+        toast.error("No pudimos guardar el circuito", message);
+      },
+    });
+
   return (
     <section data-tour="circuit-builder" className="mx-auto max-w-5xl">
       <Link
@@ -144,7 +152,7 @@ export function CircuitBuilder({ circuit }: { circuit?: CircuitDetail }) {
       >
         <ArrowLeft size={16} /> Volver a circuitos
       </Link>
-      {noExercises && (
+      {noExercises ? (
         <div className="mt-5">
           <EmptyState
             title="Aún no hay ejercicios disponibles"
@@ -159,15 +167,16 @@ export function CircuitBuilder({ circuit }: { circuit?: CircuitDetail }) {
             }
           />
         </div>
-      )}
+      ) : null}
       <form
-        onSubmit={form.handleSubmit((values) =>
-          mutation.mutate(values, {
-            onError: (error) =>
-              form.setError("root", { message: error.message }),
-          }),
+        onSubmit={form.handleSubmit(submit, () =>
+          toast.error(
+            "Revisa los campos marcados",
+            "Corrige los errores antes de guardar.",
+          ),
         )}
         className="mt-5 space-y-5"
+        noValidate
       >
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(32,23,67,0.05)]">
           <p className="text-primary text-xs font-bold tracking-[0.16em] uppercase">
@@ -176,16 +185,30 @@ export function CircuitBuilder({ circuit }: { circuit?: CircuitDetail }) {
           <h1 className="mt-1 text-2xl font-bold tracking-tight">
             {isVersion ? `Nueva versión · ${circuit?.name}` : "Nuevo circuito"}
           </h1>
-          {!isVersion && (
+          <p className="mt-2 text-sm text-slate-500">
+            Los campos indican si son obligatorios u opcionales.
+          </p>
+          {!isVersion ? (
             <div className="mt-6 grid gap-5 md:grid-cols-2">
-              <Field label="Nombre del circuito">
+              <FormField
+                name="name"
+                label="Nombre del circuito"
+                required
+                hint="Entre 2 y 120 caracteres."
+                error={form.formState.errors.name?.message}
+              >
                 <Input
                   {...form.register("name")}
                   className={inputClass}
                   placeholder="Ej. Finisher metabólico"
                 />
-              </Field>
-              <Field label="Estado inicial">
+              </FormField>
+              <FormField
+                name="status"
+                label="Estado inicial"
+                required
+                error={form.formState.errors.status?.message}
+              >
                 <select {...form.register("status")} className={inputClass}>
                   {Object.entries(circuitStatusLabel).map(([value, label]) => (
                     <option key={value} value={value}>
@@ -193,164 +216,198 @@ export function CircuitBuilder({ circuit }: { circuit?: CircuitDetail }) {
                     </option>
                   ))}
                 </select>
-              </Field>
-              <div className="md:col-span-2">
-                <Field label="Descripción">
-                  <textarea
-                    {...form.register("description")}
-                    className="min-h-22 w-full rounded-lg border border-slate-200 p-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
-                    placeholder="Objetivo y contexto del circuito."
-                  />
-                </Field>
-              </div>
+              </FormField>
+              <FormField
+                name="description"
+                label="Descripción"
+                hint="Máximo 2,000 caracteres."
+                error={form.formState.errors.description?.message}
+                className="md:col-span-2"
+              >
+                <textarea
+                  {...form.register("description")}
+                  className="min-h-22 w-full rounded-lg border border-slate-200 p-3 text-sm outline-none aria-invalid:border-rose-400 focus:border-primary focus:ring-2 focus:ring-primary/15"
+                  placeholder="Objetivo y contexto del circuito."
+                />
+              </FormField>
             </div>
-          )}
+          ) : null}
           <div className="mt-6 grid gap-5 md:grid-cols-2">
-            <Field label="Rondas">
+            <FormField
+              name="rounds"
+              label="Rondas"
+              required
+              hint="Número entero entre 1 y 50."
+              error={form.formState.errors.rounds?.message}
+            >
               <Input
-                {...form.register("rounds", { setValueAs: number })}
+                {...form.register("rounds", numberValue)}
                 className={inputClass}
                 type="number"
                 min="1"
+                max="50"
               />
-            </Field>
-            <Field label="Descanso entre rondas (segundos)">
+            </FormField>
+            <FormField
+              name="restBetweenRoundsSeconds"
+              label="Descanso entre rondas (segundos)"
+              hint="Entre 0 y 3,600 segundos."
+              error={form.formState.errors.restBetweenRoundsSeconds?.message}
+            >
               <Input
-                {...form.register("restBetweenRoundsSeconds", {
-                  setValueAs: number,
-                })}
+                {...form.register("restBetweenRoundsSeconds", numberValue)}
                 className={inputClass}
                 type="number"
                 min="0"
+                max="3600"
               />
-            </Field>
-            <div className="md:col-span-2">
-              <Field label="Notas de versión">
-                <textarea
-                  {...form.register("notes")}
-                  className="min-h-20 w-full rounded-lg border border-slate-200 p-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
-                  placeholder="Indicaciones para ejecutar este circuito."
-                />
-              </Field>
-            </div>
+            </FormField>
+            <FormField
+              name="notes"
+              label="Notas de versión"
+              hint="Máximo 2,000 caracteres."
+              error={form.formState.errors.notes?.message}
+              className="md:col-span-2"
+            >
+              <textarea
+                {...form.register("notes")}
+                className="min-h-20 w-full rounded-lg border border-slate-200 p-3 text-sm outline-none aria-invalid:border-rose-400 focus:border-primary focus:ring-2 focus:ring-primary/15"
+                placeholder="Indicaciones para ejecutar este circuito."
+              />
+            </FormField>
           </div>
         </div>
+
         <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_8px_24px_rgba(32,23,67,0.035)]">
-          <div>
-            <p className="text-primary text-xs font-bold tracking-[0.14em] uppercase">
-              Ejercicios
-            </p>
-            <h2 className="mt-1 text-xl font-bold">Secuencia del circuito</h2>
-          </div>
+          <p className="text-primary text-xs font-bold tracking-[0.14em] uppercase">
+            Ejercicios
+          </p>
+          <h2 className="mt-1 text-xl font-bold">Secuencia del circuito</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Cada ejercicio necesita repeticiones o duración.
+          </p>
           <div className="mt-5 space-y-3">
-            {exercises.map((entry, index) => (
-              <div
-                key={index}
-                className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50/50 p-4 md:grid-cols-[minmax(12rem,1fr)_7rem_8rem_8rem_auto]"
-              >
-                <Field label="Ejercicio">
-                  <select
-                    value={entry.exerciseId}
-                    onChange={(event) =>
-                      updateEntry(index, { exerciseId: event.target.value })
-                    }
-                    disabled={noExercises}
-                    className={inputClass}
-                  >
-                    <option value="">
-                      {exerciseOptions.isPending
-                        ? "Cargando ejercicios…"
-                        : "Selecciona un ejercicio"}
-                    </option>
-                    {exerciseOptions.data?.items.map((exercise) => (
-                      <option key={exercise.id} value={exercise.id}>
-                        {exercise.name}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="Repeticiones">
-                  <Input
-                    value={entry.reps ?? ""}
-                    onChange={(event) =>
-                      updateEntry(index, { reps: number(event.target.value) })
-                    }
-                    type="number"
-                    min="1"
-                    className={inputClass}
-                  />
-                </Field>
-                <Field label="Carga objetivo (kg)">
-                  <Input
-                    value={entry.targetWeightKg ?? ""}
-                    onChange={(event) =>
-                      updateEntry(index, {
-                        targetWeightKg: number(event.target.value),
-                      })
-                    }
-                    type="number"
-                    min="0"
-                    step="0.5"
-                    className={inputClass}
-                  />
-                </Field>
-                <Field label="Duración (segundos)">
-                  <Input
-                    value={entry.durationSeconds ?? ""}
-                    onChange={(event) =>
-                      updateEntry(index, {
-                        durationSeconds: number(event.target.value),
-                      })
-                    }
-                    type="number"
-                    min="1"
-                    className={inputClass}
-                  />
-                </Field>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setExercises((current) =>
-                      current.filter((_, entryIndex) => entryIndex !== index),
-                    )
-                  }
-                  disabled={exercises.length === 1}
-                  className="self-end rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-30"
-                  aria-label="Eliminar ejercicio"
+            {exerciseFields.fields.map((field, index) => {
+              const error = form.formState.errors.exercises?.[index];
+              return (
+                <div
+                  key={field.id}
+                  className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50/50 p-4 md:grid-cols-[minmax(12rem,1fr)_7rem_8rem_8rem_auto]"
                 >
-                  <Trash2 size={16} />
-                </button>
-                <div className="md:col-span-4">
-                  <Field label="Notas del ejercicio">
+                  <FormField
+                    name={`exercises.${index}.exerciseId`}
+                    label="Ejercicio"
+                    required
+                    error={error?.exerciseId?.message}
+                  >
+                    <select
+                      {...form.register(`exercises.${index}.exerciseId`)}
+                      disabled={noExercises}
+                      className={inputClass}
+                    >
+                      <option value="">
+                        {exerciseOptions.isPending
+                          ? "Cargando ejercicios…"
+                          : "Selecciona un ejercicio"}
+                      </option>
+                      {exerciseOptions.data?.items.map((exercise) => (
+                        <option key={exercise.id} value={exercise.id}>
+                          {exercise.name}
+                        </option>
+                      ))}
+                    </select>
+                  </FormField>
+                  <FormField
+                    name={`exercises.${index}.reps`}
+                    label="Repeticiones"
+                    error={error?.reps?.message}
+                  >
                     <Input
-                      value={entry.notes ?? ""}
-                      onChange={(event) =>
-                        updateEntry(index, { notes: event.target.value })
-                      }
+                      {...form.register(`exercises.${index}.reps`, numberValue)}
+                      type="number"
+                      min="1"
+                      max="500"
+                      className={inputClass}
+                    />
+                  </FormField>
+                  <FormField
+                    name={`exercises.${index}.targetWeightKg`}
+                    label="Carga objetivo (kg)"
+                    hint="0 a 1,000 kg."
+                    error={error?.targetWeightKg?.message}
+                  >
+                    <Input
+                      {...form.register(
+                        `exercises.${index}.targetWeightKg`,
+                        numberValue,
+                      )}
+                      type="number"
+                      min="0"
+                      max="1000"
+                      step="0.5"
+                      className={inputClass}
+                    />
+                  </FormField>
+                  <FormField
+                    name={`exercises.${index}.durationSeconds`}
+                    label="Duración (segundos)"
+                    error={error?.durationSeconds?.message}
+                  >
+                    <Input
+                      {...form.register(
+                        `exercises.${index}.durationSeconds`,
+                        numberValue,
+                      )}
+                      type="number"
+                      min="1"
+                      max="86400"
+                      className={inputClass}
+                    />
+                  </FormField>
+                  <button
+                    type="button"
+                    onClick={() => exerciseFields.remove(index)}
+                    disabled={exerciseFields.fields.length === 1}
+                    className="self-end rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-30"
+                    aria-label={`Eliminar ejercicio ${index + 1}`}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                  <FormField
+                    name={`exercises.${index}.notes`}
+                    label="Notas del ejercicio"
+                    hint="Máximo 2,000 caracteres."
+                    error={error?.notes?.message}
+                    className="md:col-span-4"
+                  >
+                    <Input
+                      {...form.register(`exercises.${index}.notes`)}
                       className={inputClass}
                       placeholder="Técnica, ritmo o alternativa."
                     />
-                  </Field>
+                  </FormField>
+                  {nestedMessage(error) ? (
+                    <div className="md:col-span-5">
+                      <FormAlert message={nestedMessage(error)} />
+                    </div>
+                  ) : null}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <button
             type="button"
-            onClick={() => setExercises((current) => [...current, newEntry()])}
+            onClick={() => exerciseFields.append(newExercise())}
             className="border-primary/40 text-primary hover:bg-lavender/35 mt-4 inline-flex h-9 items-center gap-2 rounded-lg border border-dashed px-3 text-xs font-bold"
           >
             <Plus size={14} /> Agregar ejercicio
           </button>
+          <FormAlert message={nestedMessage(form.formState.errors.exercises)} />
         </div>
-        {form.formState.errors.root && (
-          <p role="alert" className="text-sm font-medium text-rose-600">
-            {form.formState.errors.root.message}
-          </p>
-        )}
+        <FormAlert message={form.formState.errors.root?.server?.message} />
         <div className="flex justify-end">
           <Button type="submit" disabled={mutation.isPending || !canSave}>
-            <Save size={16} />
+            <Save size={16} />{" "}
             {mutation.isPending
               ? "Guardando…"
               : isVersion
