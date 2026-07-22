@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { ApiError } from "./api-error";
+import { isDatabaseConnectionError } from "./database-error";
 export function toApiErrorResponse(error: unknown) {
   if (error instanceof ZodError)
     return NextResponse.json(
@@ -15,12 +16,35 @@ export function toApiErrorResponse(error: unknown) {
     );
   if (error instanceof ApiError)
     return NextResponse.json(
-      { error: { code: error.code, message: error.message, details: error.details } },
+      {
+        error: {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+        },
+      },
       { status: error.status },
     );
+  if (isDatabaseConnectionError(error)) {
+    console.error(error);
+    return NextResponse.json(
+      {
+        error: {
+          code: "DATABASE_UNAVAILABLE",
+          message: "Database temporarily unavailable",
+        },
+      },
+      { status: 503 },
+    );
+  }
   console.error(error);
   return NextResponse.json(
-    { error: { code: "INTERNAL_ERROR", message: "An unexpected error occurred" } },
+    {
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "An unexpected error occurred",
+      },
+    },
     { status: 500 },
   );
 }
