@@ -5,12 +5,12 @@ import type {
   ExerciseInput,
   ExerciseUpdate,
 } from "@/features/exercises/schemas/exercise.schema";
+import { findOrCreateDefaultOrganization } from "@/server/repositories/organization.repository";
 
 export type ExerciseRecord = Prisma.ExerciseGetPayload<Record<string, never>>;
 
 export const exerciseRepository = {
-  findDefaultOrganization: () =>
-    prisma.organization.findFirst({ orderBy: { createdAt: "asc" } }),
+  findDefaultOrganization: findOrCreateDefaultOrganization,
   findMany: (where: Prisma.ExerciseWhereInput, skip: number, take: number) =>
     prisma.exercise.findMany({
       where,

@@ -1,6 +1,7 @@
 import "server-only";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/server/db/prisma";
+import { findOrCreateDefaultOrganization } from "@/server/repositories/organization.repository";
 
 export const progressionInclude = {
   exercises: {
@@ -14,8 +15,7 @@ export type ProgressionSessionRecord = Prisma.WorkoutSessionGetPayload<{
 }>;
 
 export const progressionRepository = {
-  findDefaultOrganization: () =>
-    prisma.organization.findFirst({ orderBy: { createdAt: "asc" } }),
+  findDefaultOrganization: findOrCreateDefaultOrganization,
   findClient: (id: string, organizationId: string) =>
     prisma.client.findFirst({ where: { id, organizationId } }),
   findCompletedSessions: (clientId: string, organizationId: string) =>

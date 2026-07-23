@@ -8,6 +8,7 @@ import type {
   RoutineUpdate,
   RoutineVersionInput,
 } from "@/features/routines/schemas/routine.schema";
+import { findOrCreateDefaultOrganization } from "@/server/repositories/organization.repository";
 
 const versionInclude = {
   days: {
@@ -81,8 +82,7 @@ function versionData(
 }
 
 export const routineRepository = {
-  findDefaultOrganization: () =>
-    prisma.organization.findFirst({ orderBy: { createdAt: "asc" } }),
+  findDefaultOrganization: findOrCreateDefaultOrganization,
   findMany: (
     where: Prisma.RoutineTemplateWhereInput,
     skip: number,

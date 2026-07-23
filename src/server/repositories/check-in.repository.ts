@@ -1,6 +1,7 @@
 import "server-only";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/server/db/prisma";
+import { findOrCreateDefaultOrganization } from "@/server/repositories/organization.repository";
 import type {
   CheckInInput,
   CheckInUpdate,
@@ -10,8 +11,7 @@ const checkInInclude = { client: true } satisfies Prisma.CheckInInclude;
 export type CheckInRecord = Prisma.CheckInGetPayload<{ include: typeof checkInInclude }>;
 
 export const checkInRepository = {
-  findDefaultOrganization: () =>
-    prisma.organization.findFirst({ orderBy: { createdAt: "asc" } }),
+  findDefaultOrganization: findOrCreateDefaultOrganization,
   findMany: (
     where: Prisma.CheckInWhereInput,
     skip: number,

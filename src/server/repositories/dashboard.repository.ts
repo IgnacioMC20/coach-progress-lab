@@ -2,6 +2,7 @@ import "server-only";
 import { ClientStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { progressionInclude } from "@/server/repositories/progression.repository";
+import { findOrCreateDefaultOrganization } from "@/server/repositories/organization.repository";
 
 const dashboardClientInclude = {
   workoutSessions: {
@@ -17,8 +18,7 @@ export type DashboardClientRecord = Prisma.ClientGetPayload<{
 }>;
 
 export const dashboardRepository = {
-  findDefaultOrganization: () =>
-    prisma.organization.findFirst({ orderBy: { createdAt: "asc" } }),
+  findDefaultOrganization: findOrCreateDefaultOrganization,
   findActiveClients: (organizationId: string) =>
     prisma.client.findMany({
       where: { organizationId, status: ClientStatus.ACTIVE },

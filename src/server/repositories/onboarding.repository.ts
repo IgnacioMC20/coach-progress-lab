@@ -1,11 +1,10 @@
 import "server-only";
 import { prisma } from "@/server/db/prisma";
+import { findOrCreateDefaultOrganization } from "@/server/repositories/organization.repository";
 
 export const onboardingRepository = {
   async findDefaultUser() {
-    const organization = await prisma.organization.findFirst({
-      orderBy: { createdAt: "asc" },
-    });
+    const organization = await findOrCreateDefaultOrganization();
     if (!organization) return null;
     return prisma.user.findFirst({
       where: { organizationId: organization.id },

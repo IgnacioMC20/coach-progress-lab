@@ -5,6 +5,7 @@ import type {
   WorkoutInput,
   WorkoutUpdate,
 } from "@/features/workouts/schemas/workout.schema";
+import { findOrCreateDefaultOrganization } from "@/server/repositories/organization.repository";
 
 const workoutInclude = {
   client: true,
@@ -35,8 +36,7 @@ function exercisesData(exercises: WorkoutInput["exercises"]) {
 }
 
 export const workoutRepository = {
-  findDefaultOrganization: () =>
-    prisma.organization.findFirst({ orderBy: { createdAt: "asc" } }),
+  findDefaultOrganization: findOrCreateDefaultOrganization,
   findMany: (where: Prisma.WorkoutSessionWhereInput, skip: number, take: number) =>
     prisma.workoutSession.findMany({
       where,

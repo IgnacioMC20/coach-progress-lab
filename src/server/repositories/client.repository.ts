@@ -5,6 +5,7 @@ import type {
   ClientInput,
   ClientUpdate,
 } from "@/features/clients/schemas/client.schema";
+import { findOrCreateDefaultOrganization } from "@/server/repositories/organization.repository";
 
 const clientInclude = {
   assessments: { orderBy: { assessedAt: "desc" }, take: 1 },
@@ -31,8 +32,7 @@ export type ClientDetailRecord = Prisma.ClientGetPayload<{
 }>;
 
 export const clientRepository = {
-  findDefaultOrganization: () =>
-    prisma.organization.findFirst({ orderBy: { createdAt: "asc" } }),
+  findDefaultOrganization: findOrCreateDefaultOrganization,
   findMany: (where: Prisma.ClientWhereInput, skip: number, take: number) =>
     prisma.client.findMany({
       where,
@@ -48,9 +48,7 @@ export const clientRepository = {
       include: clientDetailInclude,
     }),
   findDefaultContext: async () => {
-    const organization = await prisma.organization.findFirst({
-      orderBy: { createdAt: "asc" },
-    });
+    const organization = await findOrCreateDefaultOrganization();
     if (!organization) return null;
     const coach = await prisma.user.findFirst({
       where: { organizationId: organization.id },

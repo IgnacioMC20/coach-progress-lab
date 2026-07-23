@@ -1,6 +1,7 @@
 import "server-only";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/server/db/prisma";
+import { findOrCreateDefaultOrganization } from "@/server/repositories/organization.repository";
 import type {
   CircuitAssignmentInput,
   CircuitAssignmentUpdate,
@@ -59,8 +60,7 @@ function versionData(
 }
 
 export const circuitRepository = {
-  findDefaultOrganization: () =>
-    prisma.organization.findFirst({ orderBy: { createdAt: "asc" } }),
+  findDefaultOrganization: findOrCreateDefaultOrganization,
   findMany: (
     where: Prisma.CircuitTemplateWhereInput,
     skip: number,
