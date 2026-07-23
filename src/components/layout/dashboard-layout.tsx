@@ -3,7 +3,6 @@
 import Link from "next/link";
 import {
   Activity,
-  Bell,
   ClipboardCheck,
   Dumbbell,
   LayoutDashboard,
@@ -94,13 +93,6 @@ export function DashboardLayout({
           </div>
           <div className="ml-auto flex items-center gap-4">
             <OnboardingTour />
-            <button
-              aria-label="Notificaciones"
-              className="hover:text-primary relative text-slate-500"
-            >
-              <Bell size={19} />
-              <span className="absolute -top-1 -right-1 size-2 rounded-full bg-rose-500 ring-2 ring-white" />
-            </button>
             <div className="from-lavender to-pink text-primary grid size-8 place-items-center rounded-full bg-gradient-to-br text-xs font-bold">
               CS
             </div>
