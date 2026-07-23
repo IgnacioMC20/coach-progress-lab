@@ -10,7 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { CheckCircle2, CircleX, X } from "lucide-react";
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type ToastVariant = "success" | "error";
@@ -78,7 +78,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         aria-label="Notificaciones"
       >
         {toasts.map((toast) => {
-          const Icon = toast.variant === "success" ? CheckCircle2 : CircleX;
           return (
             <div
               key={toast.id}
@@ -91,15 +90,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   : "border-rose-200",
               )}
             >
-              <Icon
-                className={cn(
-                  "mt-0.5 size-5 shrink-0",
-                  toast.variant === "success"
-                    ? "text-emerald-600"
-                    : "text-rose-600",
-                )}
-                aria-hidden="true"
-              />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold text-slate-900">
                   {toast.title}
