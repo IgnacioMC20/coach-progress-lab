@@ -9,6 +9,7 @@ const DATABASE_CONNECTION_ERROR_PATTERNS = [
   "ssl",
   "kind: i/o error",
   "connection timed out",
+  "empty database name not allowed",
 ] as const;
 
 function errorText(error: unknown): string {

@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
-const serverSchema = z.object({ DATABASE_URL: z.string().url() });
+import { mongodbUrlSchema } from "@/lib/mongodb-url";
+const serverSchema = z.object({ DATABASE_URL: mongodbUrlSchema });
 const publicSchema = z.object({
   NEXT_PUBLIC_APP_NAME: z.string().min(1).default("Coach Progress Lab"),
 });
